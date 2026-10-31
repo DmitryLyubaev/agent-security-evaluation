@@ -107,3 +107,11 @@ class Store:
 
     def close(self):
         self.conn.close()
+
+    def get_run(self, run_id):
+        from dataclasses import fields
+
+        from .domain import RunSnapshot
+
+        data = self.run_data(run_id)
+        return RunSnapshot(**{field.name: data[field.name] for field in fields(RunSnapshot)})

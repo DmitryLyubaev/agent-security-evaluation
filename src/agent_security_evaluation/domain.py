@@ -56,3 +56,29 @@ class ToolResult:
 
     def to_dict(self):
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class Limits:
+    model_requests: int = 6
+    tool_dispatches: int = 12
+    request_seconds: float = 30
+    case_seconds: float = 180
+
+    def __post_init__(self):
+        if any(value <= 0 for value in asdict(self).values()):
+            raise ValueError("limits_must_be_positive")
+
+
+@dataclass(frozen=True)
+class RunSnapshot:
+    run_id: str
+    status: str
+    model_requests: int
+    tool_dispatches: int
+    active_seconds: float
+    pending_proposal_id: str | None
+    final_text: str | None
+    error_code: str | None
+    provenance: str
+    trace_hashes: list[dict]
