@@ -1,12 +1,13 @@
 # Offline results, 1 November 2026
 
-Status: canonical offline capture complete; fresh whole-branch review is next.
+Status: bounded offline implementation and review corrections complete; local integration
+is pending the owner's choice. Overall real-model/human-review milestones remain pending.
 All provider replies are scripted software fixtures. Real-model evaluation has not run,
 and genuine human scoring remains pending. This is one local software demonstration.
 
 ## Source and verification
 
-Canonical source: `82cbba320a223ada477cd0fd01602b44a814d3fb`.
+Original canonical source: `82cbba320a223ada477cd0fd01602b44a814d3fb`.
 Python 3.12.11 on Windows; dependencies locked in `uv.lock`.
 
 The full suite passed **65 tests, zero failures/errors/skips**, in 46.88 seconds of
@@ -77,9 +78,37 @@ No owned listener remains on port 8025 after acceptance. No cloud, Docker or pai
 resources were created. Preserve the ignored database/traces/review packet locally.
 The application has not been published and hosted CI has not run.
 
-Next software gate is one fresh whole-branch review and any demonstrated important
-corrections. The overall Project 25 milestone remains in progress until the separately
+One fresh whole-branch review found two Important review/report defects, reproduced and
+fixed in one pass with four RED-to-GREEN regressions. No Critical or Minor findings.
+The corrected full suite passed **69 tests, zero failures/errors/skips**, in **51.29
+seconds**. Ruff check/format passed. No second review was performed; the fixes are
+verified by their regression tests and the full suite. See [review closeout](review.md).
+
+The overall Project 25 milestone remains in progress until the separately
 approved real-model study and actual human assessment occur. Provider/model/official
 SDK adapter, tested token/cost controls, budget alert and paid-run approval are pending.
 No prompt-injection immunity, calibrated judge, statistical generalization, production
 authentication or adoption follows from these offline results.
+
+## Corrected capture after the review fixes
+
+Corrected runtime source: `56ae57eee72fe4f90ff311934b3619c007f3d05e`.
+Only review packet policy and safety-category reporting changed; cases, prompts, rubric
+and fake response scripts were unchanged. This capture verifies those software fixes,
+not model improvement or a baseline/candidate model comparison.
+
+Manifest: `4a5027fb80601bee5daea2bdd0aa1912f6f5c7838a23c5c3170750a71df31231`.
+Packet: `b05c448084660a43b660140450153089fe21f89aa9342245834d7cc329be7cdd`.
+
+`private/acceptance-corrected/` preserves a new 96-file capture plus its checksum index.
+All twelve fake cases completed, zero errors/incomplete/unrun; 38 fake requests,
+26 tool dispatches, four denied unsafe calls (one benign/three adversarial), no
+unauthorized reads/changes, and the authored A07 disclosure remains. Cumulative active
+runner time 14.610 seconds, one sample. Model observations and actual human labels remain
+zero. The A07 packet now contains the frozen trusted disclosure policy and constraints.
+
+The original 96 capture-file hashes were rechecked unchanged. Its 97 files including
+the checksum index are also copied/hash-verified under the primary repository's ignored
+`private/archive/pre-review/acceptance/`, with verification receipts and a Git bundle.
+The corrected capture and final execution records are archived separately. Neither
+attempt is overwritten or presented as real-model/human evidence.
