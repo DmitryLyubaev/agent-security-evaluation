@@ -22,3 +22,16 @@ def write_trace(trace_dir: Path, run_id: str, sequence: int, payload: dict) -> s
 
 def verify_trace(path: Path, expected_sha256: str) -> bool:
     return path.is_file() and file_sha256(path) == expected_sha256
+
+
+def redact_copy(payload, forbidden_values):
+    if isinstance(payload, str):
+        for value in forbidden_values:
+            if value:
+                payload = payload.replace(value, "[REDACTED]")
+        return payload
+    if isinstance(payload, list):
+        return [redact_copy(value, forbidden_values) for value in payload]
+    if isinstance(payload, dict):
+        return {key: redact_copy(value, forbidden_values) for key, value in payload.items()}
+    return payload

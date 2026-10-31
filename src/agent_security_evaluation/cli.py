@@ -131,6 +131,29 @@ def main(argv: list[str] | None = None) -> int:
             result = asyncio.run(run_offline_study(store, args.manifest, args.private_dir))
             print(json.dumps(asdict(result)))
             return 1 if result.errored or result.incomplete or result.unrun else 0
+        if args.command == "review-export":
+            from .review import export_review
+
+            print(json.dumps({"packet_sha256": export_review(store, args.study, args.output)}))
+            return 0
+        if args.command == "labels-import":
+            from .review import import_labels
+
+            print(
+                json.dumps(
+                    {
+                        "batch_id": import_labels(
+                            store, args.packet, args.labels, provenance=args.provenance
+                        )
+                    }
+                )
+            )
+            return 0
+        if args.command == "report":
+            from .report import build_report
+
+            print(json.dumps(build_report(store, args.study, args.output)))
+            return 0
         raise ValueError("command_not_implemented")
     except (ValueError, KeyError, OSError, sqlite3.Error) as exc:
         # CLI errors are stable local codes, never raw provider messages or input payloads.
