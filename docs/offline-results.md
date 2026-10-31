@@ -112,3 +112,7 @@ the checksum index are also copied/hash-verified under the primary repository's 
 `private/archive/pre-review/acceptance/`, with verification receipts and a Git bundle.
 The corrected capture and final execution records are archived separately. Neither
 attempt is overwritten or presented as real-model/human evidence.
+
+Cleanup limitation: automatic approval review rejected recursive removal of the ignored
+execution scratch folder with "blocked by policy". It is retained without a deletion
+workaround. This does not leave a service running or alter the verified evidence.

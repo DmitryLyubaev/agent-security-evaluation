@@ -26,3 +26,4 @@ Final review corrections: RED reproduced all three category/diversion disagreeme
 Final: fixed exact safety category/diversion comparison - test_safety_comparison_preserves_exact_category_and_diversion (3 cases) RED->GREEN, suite 69/69.
 Final: fixed missing trusted disclosure policy - test_packet_contains_trusted_disclosure_policy RED->GREEN, suite 69/69.
 Final: no deferred minors. Corrected runtime 56ae57e; manifest 4a5027fb; 12/12 fake completions; 96 corrected files hash-verified; all 96 original hashes unchanged. No second review, real-model evaluation, human scoring or publication.
+Final: Ruling: automatic approval review rejected recursive removal of the verified task scratch folder with blocked by policy; retain it and archive non-destructively, with no deletion workaround. Cost if wrong: small ignored scratch storage remains; runtime/evidence correctness unaffected.
