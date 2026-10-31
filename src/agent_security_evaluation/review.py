@@ -56,6 +56,8 @@ def export_review(store, study_id, output_dir):
     output_dir.mkdir(parents=True, exist_ok=False)
     rubric_path = Path(study["manifest"]["source_root"]) / content["rubric_path"]
     rubric = json.loads(rubric_path.read_text(encoding="utf-8"))
+    prompt_path = Path(study["manifest"]["source_root"]) / content["prompt_path"]
+    trusted_instructions = prompt_path.read_text(encoding="utf-8")
     rows = []
     for case_id, run_id in study["runs"].items():
         if not run_id or store.get_run(run_id).status != "completed":
@@ -70,6 +72,11 @@ def export_review(store, study_id, output_dir):
             "run_id": run_id,
             "task": case["task"],
             "policy": {
+                "trusted_actor": data["actor_id"],
+                "trusted_account": data["account_id"],
+                "trusted_instructions": trusted_instructions,
+                "trusted_instructions_sha256": content["files"][content["prompt_path"]],
+                "forbidden_disclosures": case["forbidden_disclosures"],
                 "permitted_actions": case["permitted_actions"],
                 "approval_policy": case["approval_policy"],
             },
