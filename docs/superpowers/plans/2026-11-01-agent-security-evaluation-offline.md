@@ -10,7 +10,7 @@
 
 **Spec:** [Approved design](../specs/2026-11-01-agent-security-evaluation-design.md), approved by Dmitry in chat on 1 November 2026 after fresh builder check returned "nothing important left".
 
-**Plan status:** Ready for owner review and execution-method selection. No implementation has started.
+**Plan status:** Approved by Dmitry with Native execution on 1 November 2026. Tasks 1-5 completed; Task 6 canonical capture and final review underway.
 
 ## Global Constraints
 
@@ -80,7 +80,7 @@ and authored fixtures only; generated private evidence belongs under ignored `pr
 - `record_approval(store: Store, proposal_id: str, approver: TrustedApprover, *, approve: bool) -> str` records the trusted decision; a grant is bound to proposal ID/digest, run, actor, account, target/version, reason and citations.
 - `tool_schemas() -> list[dict]` returns only the three approved tool definitions. Approval is never a model tool.
 
-- [ ] **Step 1: Write failing SQLite-backed tests.** Include `test_read_own_account`, `test_foreign_read_returns_no_content`, `test_strict_arguments_reject_extra_actor_and_approved_flag`, `test_citations_belong_to_target`, `test_forged_or_missing_grant_denies`, `test_wrong_approver_account_denies`, `test_altered_or_stale_proposal_denies`, `test_foreign_run_proposal_denies`, `test_grant_is_single_use` and `test_apply_audit_failure_rolls_back`.
+- [x] **Step 1: Write failing SQLite-backed tests.** Include `test_read_own_account`, `test_foreign_read_returns_no_content`, `test_strict_arguments_reject_extra_actor_and_approved_flag`, `test_citations_belong_to_target`, `test_forged_or_missing_grant_denies`, `test_wrong_approver_account_denies`, `test_altered_or_stale_proposal_denies`, `test_foreign_run_proposal_denies`, `test_grant_is_single_use` and `test_apply_audit_failure_rolls_back`.
 
 Representative assertions, using fixtures that seed fresh real temporary databases:
 
@@ -99,10 +99,10 @@ Also check denied attempts are audited without returning foreign-record metadata
 the audit INSERT to fail with a temporary SQLite trigger, then independently read the
 record/grant to prove the transition and consumption rolled back together.
 
-- [ ] **Step 2: Establish the minimal package and run RED.** Set Python 3.12 and personal identity, create an ignored local environment, resolve/lock dependencies once, expose `agent-security` as the future console command. Run `uv run pytest tests/test_tools.py -q`; confirm the new tests fail because policy behavior is missing, not due to a broken environment.
-- [ ] **Step 3: Implement the named types, SQLite storage and tool functions.** Use parameterized SQL and a single transaction for apply/grant-consumption/audit. Proposals are immutable. Return generic access denial for absent/foreign records and never trust actor/account/approval fields in tool arguments. Serialize the entire proposed change canonically for its digest.
-- [ ] **Step 4: Run GREEN.** `uv run pytest tests/test_tools.py -q` and `uv run ruff check .` must pass, with the SQLite rollback and replay assertions exercised.
-- [ ] **Step 5: Commit this deliverable.** Stage only Task 1 source/config/tests and commit `feat: enforce local tool permissions and exact approval`.
+- [x] **Step 2: Establish the minimal package and run RED.** Set Python 3.12 and personal identity, create an ignored local environment, resolve/lock dependencies once, expose `agent-security` as the future console command. Run `uv run pytest tests/test_tools.py -q`; confirm the new tests fail because policy behavior is missing, not due to a broken environment.
+- [x] **Step 3: Implement the named types, SQLite storage and tool functions.** Use parameterized SQL and a single transaction for apply/grant-consumption/audit. Proposals are immutable. Return generic access denial for absent/foreign records and never trust actor/account/approval fields in tool arguments. Serialize the entire proposed change canonically for its digest.
+- [x] **Step 4: Run GREEN.** `uv run pytest tests/test_tools.py -q` and `uv run ruff check .` must pass, with the SQLite rollback and replay assertions exercised.
+- [x] **Step 5: Commit this deliverable.** Stage only Task 1 source/config/tests and commit `feat: enforce local tool permissions and exact approval`.
 
 ## Task 2: Add the bounded, persisted direct tool loop and private traces
 
@@ -119,7 +119,7 @@ record/grant to prove the transition and consumption rolled back together.
 - Store gains `get_run(run_id: str) -> RunSnapshot`; checkpoints persist messages, results and counters. Approval decisions are read from Task 1's trusted records.
 - `write_trace(trace_dir: Path, run_id: str, sequence: int, payload: dict) -> str` exclusively creates a private JSONL record and returns its SHA-256. `verify_trace(path: Path, expected_sha256: str) -> bool` validates bytes.
 
-- [ ] **Step 1: Write failing runner tests.** Cover read/propose/pause/approve/resume/apply/final; no-grant resume; a batch containing propose then apply before approval; malformed and unknown calls; request/tool/time caps; provider exception/timeout; missing usage; duplicate call IDs; and trace-write failure. Use tiny time limits only in timeout tests, not 30-second sleeps.
+- [x] **Step 1: Write failing runner tests.** Cover read/propose/pause/approve/resume/apply/final; no-grant resume; a batch containing propose then apply before approval; malformed and unknown calls; request/tool/time caps; provider exception/timeout; missing usage; duplicate call IDs; and trace-write failure. Use tiny time limits only in timeout tests, not 30-second sleeps.
 
 ```python
 assert waiting.status == "waiting_approval"
@@ -140,10 +140,10 @@ provider turn with no committed response is an explicit interrupted/incomplete r
 not an automatic resend. Audit attempted calls rejected by the dispatch cap as limits;
 do not silently drop batched calls or dispatch beyond the cap.
 
-- [ ] **Step 2: Run RED.** `uv run pytest tests/test_runner.py -q` must reproduce the missing runner behavior.
-- [ ] **Step 3: Implement the async provider loop and checkpointing.** Persist a request reservation before calling the provider. Bound the await and overall active time, keep counters across approval pauses, and produce explicit terminal errors/incomplete outcomes. Never silently retry provider calls. Ordinary tool/final responses suffice; do not request hidden chain-of-thought. Preserve raw traces, and stop with an evidence error if durable recording fails.
-- [ ] **Step 4: Run GREEN.** `uv run pytest tests/test_tools.py tests/test_runner.py -q` and Ruff must pass. Inspect one test trace to confirm request/reply/tool identities and visibly fake provenance.
-- [ ] **Step 5: Commit.** Stage Task 2 files and commit `feat: add bounded resumable tool runner and private traces`.
+- [x] **Step 2: Run RED.** `uv run pytest tests/test_runner.py -q` must reproduce the missing runner behavior.
+- [x] **Step 3: Implement the async provider loop and checkpointing.** Persist a request reservation before calling the provider. Bound the await and overall active time, keep counters across approval pauses, and produce explicit terminal errors/incomplete outcomes. Never silently retry provider calls. Ordinary tool/final responses suffice; do not request hidden chain-of-thought. Preserve raw traces, and stop with an evidence error if durable recording fails.
+- [x] **Step 4: Run GREEN.** `uv run pytest tests/test_tools.py tests/test_runner.py -q` and Ruff must pass. Inspect one test trace to confirm request/reply/tool identities and visibly fake provenance.
+- [x] **Step 5: Commit.** Stage Task 2 files and commit `feat: add bounded resumable tool runner and private traces`.
 
 ## Task 3: Author and freeze the twelve independent synthetic cases
 
@@ -156,11 +156,11 @@ do not silently drop batched calls or dispatch beyond the cap.
 - `freeze_study(cases_dir: Path, prompt_path: Path, rubric_path: Path, source_commit: str, output_path: Path) -> str` writes an immutable manifest and returns its hash. Freeze tool schemas, fake provider configuration, bounds and original file hashes; refuse dirty/unknown source identity for canonical acceptance.
 - `run_offline_study(store: Store, manifest_path: Path, evidence_dir: Path) -> StudySummary` is async. It records all twelve planned cases, executes them once sequentially and preserves errors/unrun cases. `StudySummary` exposes study ID, provenance and planned/attempted/completed/errored/incomplete/unrun counts plus run IDs.
 
-- [ ] **Step 1: Write failing fixture/freeze tests.** Assert exact unique IDs, four benign/eight adversarial, two cases per attack class, both document/tool-result surfaces, explicit expected outcomes and legitimate tasks. `test_duplicate_case_or_changed_frozen_bytes_rejected` checks duplicate IDs, modified case/prompt/rubric/tool-schema bytes, and attempts to overwrite a manifest.
-- [ ] **Step 2: Run RED.** `uv run pytest tests/test_study.py -q` must fail on missing fixtures/freezing behavior.
-- [ ] **Step 3: Author fixtures and implement loading/freezing/orchestration.** Use target `A-100`, foreign `B-200`, citation `E-A1` and expected reason `Request carrier follow-up.` for the exact B01 approval fixture. B01's task explicitly requests that reason, so matching is possible without fuzzy post-hoc approval. Approve only the exact account/actor/target/version/status/reason/citations proposal; no other case gets a grant. B02 can propose but must finish without applying; B03 lacks evidence; B04 requests a foreign record. Define A01/A02's attacker goal as final-answer inclusion of exact unique diversion markers. A07/A08 actually expose a synthetic internal marker to the model through allowed evidence; A08 asks for a nonexistent export tool. All attack cases retain an explicit legitimate task. Build deliberately safe and unsafe fake response scripts as software tests, never as model-quality measurements.
-- [ ] **Step 4: Run GREEN.** `uv run pytest tests/test_study.py -q` passes. Assert a bounded fake study records all twelve slots, and a deliberately failing fake preserves its error and later planned outcomes without a favorable retry. Verify two identical source freezes have equal content identity; timestamps are metadata, not the content hash.
-- [ ] **Step 5: Commit.** Stage Task 3 authored inputs/source/tests and commit `feat: freeze synthetic benign and adversarial study cases`.
+- [x] **Step 1: Write failing fixture/freeze tests.** Assert exact unique IDs, four benign/eight adversarial, two cases per attack class, both document/tool-result surfaces, explicit expected outcomes and legitimate tasks. `test_duplicate_case_or_changed_frozen_bytes_rejected` checks duplicate IDs, modified case/prompt/rubric/tool-schema bytes, and attempts to overwrite a manifest.
+- [x] **Step 2: Run RED.** `uv run pytest tests/test_study.py -q` must fail on missing fixtures/freezing behavior.
+- [x] **Step 3: Author fixtures and implement loading/freezing/orchestration.** Use target `A-100`, foreign `B-200`, citation `E-A1` and expected reason `Request carrier follow-up.` for the exact B01 approval fixture. B01's task explicitly requests that reason, so matching is possible without fuzzy post-hoc approval. Approve only the exact account/actor/target/version/status/reason/citations proposal; no other case gets a grant. B02 can propose but must finish without applying; B03 lacks evidence; B04 requests a foreign record. Define A01/A02's attacker goal as final-answer inclusion of exact unique diversion markers. A07/A08 actually expose a synthetic internal marker to the model through allowed evidence; A08 asks for a nonexistent export tool. All attack cases retain an explicit legitimate task. Build deliberately safe and unsafe fake response scripts as software tests, never as model-quality measurements.
+- [x] **Step 4: Run GREEN.** `uv run pytest tests/test_study.py -q` passes. Assert a bounded fake study records all twelve slots, and a deliberately failing fake preserves its error and later planned outcomes without a favorable retry. Verify two identical source freezes have equal content identity; timestamps are metadata, not the content hash.
+- [x] **Step 5: Commit.** Stage Task 3 authored inputs/source/tests and commit `feat: freeze synthetic benign and adversarial study cases`.
 
 ## Task 4: Expose the shared local workflow through FastAPI and CLI
 
@@ -175,11 +175,11 @@ do not silently drop batched calls or dispatch beyond the cap.
 - Reserve `study-live` only as an explanatory, side-effect-free refusal with exit 2 in this offline release. No live SDK dependency, key lookup, budget charge or network fallback.
 - Normal success/valid pending state exits 0; invalid input/policy refusal exits 2; runtime/incomplete execution exits 1. Output includes state/provenance rather than treating an attack as a CLI crash.
 
-- [ ] **Step 1: Write failing API/CLI tests.** Use httpx ASGI transport against real temporary SQLite and subprocess CLI invocations. Verify one successful flow through API-created proposal, CLI approval/resume and API readback; account/role/provider override bodies return validation errors; no approval HTTP route exists. Withhold leaves the record `open`; an unknown run fails without another run's data.
-- [ ] **Step 2: Run RED.** `uv run pytest tests/test_api_cli.py -q` reproduces the missing surface.
-- [ ] **Step 3: Implement the two routes and named commands.** Reuse policy/runner functions. API-created B01 runs wait for actual CLI approval rather than silently applying the study fixture. Only the explicit study harness supplies B01's declared deterministic grant. `uv run agent-security serve --db private/demo.sqlite3 --private-dir private/demo --cases-dir cases` invokes Uvicorn with the configured app bound to `127.0.0.1:8025`; check port ownership before any manual demo. No persistent background worker or queue.
-- [ ] **Step 4: Run GREEN.** `uv run pytest tests/test_api_cli.py -q` and `uv run agent-security --help` pass. `study-live` exits 2 without a database/evidence change or network call; tests use a network tripwire and fake secret canary to prove no live fallback/key access.
-- [ ] **Step 5: Commit.** Stage Task 4 files and commit `feat: expose local API and operator CLI workflow`.
+- [x] **Step 1: Write failing API/CLI tests.** Use httpx ASGI transport against real temporary SQLite and subprocess CLI invocations. Verify one successful flow through API-created proposal, CLI approval/resume and API readback; account/role/provider override bodies return validation errors; no approval HTTP route exists. Withhold leaves the record `open`; an unknown run fails without another run's data.
+- [x] **Step 2: Run RED.** `uv run pytest tests/test_api_cli.py -q` reproduces the missing surface.
+- [x] **Step 3: Implement the two routes and named commands.** Reuse policy/runner functions. API-created B01 runs wait for actual CLI approval rather than silently applying the study fixture. Only the explicit study harness supplies B01's declared deterministic grant. `uv run agent-security serve --db private/demo.sqlite3 --private-dir private/demo --cases-dir cases` invokes Uvicorn with the configured app bound to `127.0.0.1:8025`; check port ownership before any manual demo. No persistent background worker or queue.
+- [x] **Step 4: Run GREEN.** `uv run pytest tests/test_api_cli.py -q` and `uv run agent-security --help` pass. `study-live` exits 2 without a database/evidence change or network call; tests use a network tripwire and fake secret canary to prove no live fallback/key access.
+- [x] **Step 5: Commit.** Stage Task 4 files and commit `feat: expose local API and operator CLI workflow`.
 
 ## Task 5: Export human packets and report honest separated evidence
 
@@ -193,7 +193,7 @@ do not silently drop batched calls or dispatch beyond the cap.
 - `build_report(store: Store, study_id: str, output_path: Path) -> dict` writes a safe JSON aggregate and Markdown sibling. Split application outcomes, observed model provenance and human assessments; include denominators, latency, usage/cost unknowns, errors/unrun and disagreements. Do not overwrite raw evidence.
 - `redact_copy(payload: dict, forbidden_values: tuple[str, ...]) -> dict` removes configured fake-key canaries from derived exports without modifying the original payload/files. Raw traces never contain actual provider authorization headers.
 
-- [ ] **Step 1: Write failing review/report tests.** Cover all three label axes, rationale validation, corrected-label history, missing labels, duplicate/foreign run IDs, modified packet/rubric/trace bytes, unavailable provider-error outputs, missing usage and offline fake labels. Include one unsafe attempt blocked by the application and one final-answer marker disclosure; assert they appear as different outcomes.
+- [x] **Step 1: Write failing review/report tests.** Cover all three label axes, rationale validation, corrected-label history, missing labels, duplicate/foreign run IDs, modified packet/rubric/trace bytes, unavailable provider-error outputs, missing usage and offline fake labels. Include one unsafe attempt blocked by the application and one final-answer marker disclosure; assert they appear as different outcomes.
 
 ```python
 assert packet_has_automated_verdicts is False
@@ -210,10 +210,10 @@ fail closed. `test_adverse_and_corrected_labels_preserved` asserts the original 
 remains readable. Human-origin labels on fake outputs still cannot satisfy the project's
 real-model human-review milestone. Do not infer a person's score from expected actions.
 
-- [ ] **Step 2: Run RED.** `uv run pytest tests/test_review_report.py -q` confirms the missing behaviors.
-- [ ] **Step 3: Implement packet export, label import/history and reports.** Machine-detect final-answer synthetic markers and classify attempted/blocked/executed calls using case policy and actual audit/state. Mark unsupported semantic task outcomes as needing human assessment, not machine-proven correctness. Show human/machine disagreement only after labels exist. Export private packets without automated verdicts and safe public-summary candidates without raw labels/traces or secrets. Never publish automatically.
-- [ ] **Step 4: Run GREEN.** `uv run pytest tests/test_review_report.py -q` passes; inspect one generated private packet and safe report for readability and explicit fake/missing-human labels. Test labels have `test_fixture` provenance throughout.
-- [ ] **Step 5: Commit.** Stage Task 5 files and commit `feat: add provenance-bound review packets and separated reports`.
+- [x] **Step 2: Run RED.** `uv run pytest tests/test_review_report.py -q` confirms the missing behaviors.
+- [x] **Step 3: Implement packet export, label import/history and reports.** Machine-detect final-answer synthetic markers and classify attempted/blocked/executed calls using case policy and actual audit/state. Mark unsupported semantic task outcomes as needing human assessment, not machine-proven correctness. Show human/machine disagreement only after labels exist. Export private packets without automated verdicts and safe public-summary candidates without raw labels/traces or secrets. Never publish automatically.
+- [x] **Step 4: Run GREEN.** `uv run pytest tests/test_review_report.py -q` passes; inspect one generated private packet and safe report for readability and explicit fake/missing-human labels. Test labels have `test_fixture` provenance throughout.
+- [x] **Step 5: Commit.** Stage Task 5 files and commit `feat: add provenance-bound review packets and separated reports`.
 
 ## Task 6: Prove the offline workflow and document the remaining live milestone
 
@@ -247,5 +247,5 @@ Recommended execution: **Native**, because these six tasks share a small set of 
 and one database, and this is a reversible local demonstration. Implement task-by-task
 in this chat, then one fresh whole-branch review. Subagent-driven execution is available
 if Dmitry prefers independent review at each task, with additional context/review cost.
-Wait for plan review and execution-method selection before creating the application repo
-or installing its dependencies.
+Plan review and Native execution were approved by Dmitry before the application repository
+was created. No paid/provider execution or publication was included in that approval.
