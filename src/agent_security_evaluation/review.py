@@ -90,8 +90,8 @@ def export_review(store, study_id, output_dir):
             "provenance": data["provenance"],
             "rubric": rubric,
         }
-        # Only a fake provider-key canary exists in this offline implementation.
-        # Synthetic internal markers remain visible as evidence, not redacted as credentials.
+        # Export curated task/tool/final material, never raw provider headers or reasoning.
+        # Synthetic internal markers remain visible as disclosure evidence.
         material = redact_copy(material, ("FAKE-KEY-CANARY",))
         path = output_dir / f"{case_id}.json"
         path.write_text(canonical(material) + "\n", encoding="utf-8", newline="\n")
@@ -108,7 +108,7 @@ def export_review(store, study_id, output_dir):
         "study_id": study_id,
         "rubric_sha256": content["files"][content["rubric_path"]],
         "runs": rows,
-        "provenance": "offline_fake",
+        "provenance": study.get("provenance", "offline_fake"),
     }
     packet = {"content": body, "packet_sha256": digest(body)}
     (output_dir / "packet.json").write_text(

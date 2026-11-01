@@ -62,6 +62,9 @@ def prepare_live(
     ]
     body = {
         "kind": "p25-live-v1",
+        "cases_dir": "cases",
+        "prompt_path": "prompts/assistant.txt",
+        "rubric_path": "rubric.json",
         "source_commit": git(root, "rev-parse", "HEAD"),
         "files": {p.relative_to(root).as_posix(): file_sha256(p) for p in sorted(files)},
         "tools": tool_schemas(),
@@ -124,6 +127,9 @@ def validate_manifest(manifest_path):
         or body["tools"] != tool_schemas()
         or body["provider_tools"] != _wire_tools(profile)
         or body["backend"] != "httpx2 with native truststore"
+        or body["cases_dir"] != "cases"
+        or body["prompt_path"] != "prompts/assistant.txt"
+        or body["rubric_path"] != "rubric.json"
     ):
         raise ValueError("live_configuration_changed")
     root = Path(manifest["source_root"]).resolve()
