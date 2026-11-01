@@ -4,8 +4,9 @@ A bounded synthetic portfolio demonstration: a delivery-exception assistant can 
 evidence, propose a follow-up and apply exactly one approved status change. Application
 code enforces account access and approval independently of generated tool arguments.
 
-**A guarded live path is implemented; all evidence collected so far is offline.**
-No real model has been evaluated and no genuine human scoring has occurred. The fake
+**The guarded live attempt stopped after its first generation request failed.**
+Model/workspace access passed, but no real-model answer completed and no genuine human
+scoring has occurred. See the [dated live attempt](docs/live-results.md). The fake
 scripts deliberately include denied unauthorized attempts and one disclosed synthetic
 marker to exercise reporting. Those outcomes are not model-security findings.
 
@@ -119,8 +120,11 @@ granted single-pass path, fixed profile, durable USD2 allowance and unknown-char
 refuses with exit 2 before credentials, storage or network. Ordinary `run`, API and
 `study-offline` remain fake; ordinary `resume` refuses live runs.
 
-Remaining: confirm personal account/workspace and provider budget notification,
-approve the final source-bound paid packet, run the twelve cases once, then obtain
-actual human scores. Publication and hosted CI remain separately authorized
+The owner approved the personal workspace, saved budget notification and US$2 packet.
+The study attempted one case: zero completed, one error and eleven unrun. The ledger
+retains US$1.051136 for an uncertain charge; actual usage/cost is unknown. Further
+dispatch is stopped. Diagnose and reconcile that attempt before considering any future
+paid work; no retry or new allowance is automatic. The model/human evidence milestone
+remains incomplete. Publication and hosted CI remain separately authorized
 actions. No prompt-injection immunity, statistical generalization or production adoption
 follows from twelve synthetic cases.
