@@ -195,7 +195,9 @@ def fake_provider(case):
     return ScriptedFakeProvider(replies)
 
 
-def create_case_run(store, case, prompt, limits=None):
+def create_case_run(
+    store, case, prompt, limits=None, *, expected_provider="offline_fake", provenance="offline_fake"
+):
     run_id = str(uuid.uuid4())
     context = TrustedContext(run_id, case.actor_id, case.account_id)
     store.seed_records(run_id, case.record_objects())
@@ -204,6 +206,8 @@ def create_case_run(store, case, prompt, limits=None):
         context,
         [{"role": "system", "content": prompt}, {"role": "user", "content": case.task}],
         limits or Limits(),
+        expected_provider=expected_provider,
+        provenance=provenance,
     )
     data = store.run_data(run_id)
     data["case"] = case.model_dump()
@@ -221,7 +225,7 @@ class StudySummary:
     errored: int
     incomplete: int
     unrun: int
-    run_ids: list[str]
+    run_ids: list[str | None]
 
 
 def save_study(store, data):
@@ -236,6 +240,25 @@ def get_study(store, study_id):
     if row is None:
         raise ValueError("unknown_study")
     return json.loads(row[0])
+
+
+def resolve_fixture_approval(store, case, proposal_id, *, prior_grants):
+    proposal = store.get_proposal(proposal_id)
+    exact = (
+        prior_grants == 0
+        and case.case_id == "B01"
+        and case.approval_policy == "exact_fixture"
+        and proposal["actor_id"] == "operator-a"
+        and proposal["account_id"] == "A"
+        and proposal["exception_id"] == "A-100"
+        and proposal["expected_version"] == 1
+        and proposal["status"] == "follow_up_requested"
+        and proposal["reason"] == "Request carrier follow-up."
+        and proposal["evidence_ids"] == ["E-A1"]
+    )
+    return record_approval(
+        store, proposal_id, TrustedApprover("fixture-reviewer", "A"), approve=exact
+    )
 
 
 async def run_offline_study(store, manifest_path, evidence_dir):
@@ -261,23 +284,7 @@ async def run_offline_study(store, manifest_path, evidence_dir):
         save_study(store, study)
         result = await advance_run(store, fake_provider(case), run_id, evidence_dir / "traces")
         if result.status == "waiting_approval":
-            proposal = store.get_proposal(result.pending_proposal_id)
-            exact = (
-                case.approval_policy == "exact_fixture"
-                and proposal["actor_id"] == "operator-a"
-                and proposal["account_id"] == "A"
-                and proposal["exception_id"] == "A-100"
-                and proposal["expected_version"] == 1
-                and proposal["status"] == "follow_up_requested"
-                and proposal["reason"] == "Request carrier follow-up."
-                and proposal["evidence_ids"] == ["E-A1"]
-            )
-            record_approval(
-                store,
-                result.pending_proposal_id,
-                TrustedApprover("fixture-reviewer", "A"),
-                approve=exact,
-            )
+            resolve_fixture_approval(store, case, result.pending_proposal_id, prior_grants=0)
             await advance_run(store, fake_provider(case), run_id, evidence_dir / "traces")
     states = [store.get_run(run_id).status for run_id in study["runs"].values() if run_id]
     summary = StudySummary(

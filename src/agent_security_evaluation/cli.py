@@ -36,6 +36,8 @@ def parser():
         "freeze",
         "study-offline",
         "study-live",
+        "live-prepare",
+        "live-readiness",
         "review-export",
         "labels-import",
         "report",
@@ -50,10 +52,15 @@ def parser():
             command.add_argument("--run", required=True)
         if name in ("approve", "withhold"):
             command.add_argument("--proposal", required=True)
-        if name in ("freeze", "review-export", "report"):
+        if name in ("freeze", "review-export", "report", "live-prepare"):
             command.add_argument("--output", type=Path, required=True)
         if name == "study-offline":
             command.add_argument("--manifest", type=Path, required=True)
+        if name in ("study-live", "live-readiness"):
+            command.add_argument("--manifest", type=Path)
+        if name == "study-live":
+            command.add_argument("--grant", type=Path)
+            command.add_argument("--ledger", type=Path)
         if name in ("review-export", "report"):
             command.add_argument("--study", required=True)
         if name == "labels-import":
@@ -65,7 +72,7 @@ def parser():
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    if args.command == "study-live":
+    if args.command == "study-live" and not all((args.manifest, args.grant, args.ledger)):
         print(
             json.dumps(
                 {"error": "live_not_implemented_or_authorized", "provenance": "offline_fake"}
@@ -74,6 +81,38 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     store = None
     try:
+        if args.command == "live-prepare":
+            from .anthropic_provider import LiveProfile
+            from .live import prepare_live
+
+            print(
+                json.dumps(
+                    prepare_live(
+                        LiveProfile(), args.output, source_root=args.cases_dir.resolve().parent
+                    )
+                )
+            )
+            return 0
+        if args.command == "live-readiness":
+            from .live import readiness
+
+            if not args.manifest:
+                raise ValueError("live_manifest_required")
+            print(json.dumps(readiness(args.manifest)))
+            return 0
+        if args.command == "study-live":
+            from .live import run_live_study, validate_live_authority
+
+            authority = validate_live_authority(args.manifest, args.grant, args.ledger)
+            paths = authority["manifest"]["content"]["paths"]
+            store = Store(Path(paths["store"]))
+            result = asyncio.run(
+                run_live_study(
+                    store, args.manifest, args.grant, args.ledger, Path(paths["evidence"])
+                )
+            )
+            print(json.dumps(asdict(result)))
+            return 1 if result.errored or result.incomplete or result.unrun else 0
         if args.command == "serve":
             import socket
 
@@ -115,7 +154,10 @@ def main(argv: list[str] | None = None) -> int:
             if args.command == "show":
                 result = store.get_run(args.run)
             else:
-                case = CaseSpec.model_validate(store.run_data(args.run)["case"])
+                data = store.run_data(args.run)
+                if data.get("provenance", "offline_fake") != "offline_fake":
+                    raise ValueError("live_requires_approved_study_entrypoint")
+                case = CaseSpec.model_validate(data["case"])
                 result = asyncio.run(
                     advance_run(store, fake_provider(case), args.run, args.private_dir / "traces")
                 )

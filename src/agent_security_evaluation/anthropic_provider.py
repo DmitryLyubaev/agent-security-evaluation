@@ -186,6 +186,9 @@ class AnthropicProvider:
     async def complete(self, request):
         from .allowance import integer
 
+        self.last_receipt = None
+        self.last_error_code = None
+
         if not request.run_id or not request.case_id or request.request_ordinal is None:
             raise ValueError("trusted_request_identity_required")
         body = encode_request(request, self.profile)

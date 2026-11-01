@@ -8,7 +8,9 @@ from .provider import ModelReply, ModelRequest
 from .tools import dispatch_tool, tool_schemas
 
 
-def start_run(store, context, messages, limits):
+def start_run(
+    store, context, messages, limits, *, expected_provider="offline_fake", provenance="offline_fake"
+):
     if store.conn.execute("SELECT 1 FROM runs WHERE id=?", (context.run_id,)).fetchone():
         raise ValueError("run_already_exists")
     store.save_run_data(
@@ -23,7 +25,8 @@ def start_run(store, context, messages, limits):
             "pending_proposal_id": None,
             "final_text": None,
             "error_code": None,
-            "provenance": "offline_fake",
+            "provenance": provenance,
+            "expected_provider": expected_provider,
             "trace_hashes": [],
             "seen_call_ids": [],
             "in_flight": False,
@@ -82,7 +85,14 @@ async def advance_run(store, provider, run_id, trace_dir):
             return stop("incomplete", "case_time_limit")
         if data["model_requests"] >= limits.model_requests:
             return stop("incomplete", "model_request_limit")
-        request = ModelRequest(data["messages"], tool_schemas(), limits)
+        request = ModelRequest(
+            data["messages"],
+            tool_schemas(),
+            limits,
+            run_id,
+            data.get("case", {}).get("case_id"),
+            data["model_requests"] + 1,
+        )
         data["model_requests"] += 1
         data["in_flight"] = True
         save()
@@ -98,8 +108,19 @@ async def advance_run(store, provider, run_id, trace_dir):
         except TimeoutError:
             code = "case_time_limit" if remaining <= limits.request_seconds else "provider_timeout"
             return stop("incomplete" if code == "case_time_limit" else "error", code)
-        except Exception:  # noqa: BLE001 - provider boundary must not leak provider exception text
-            return stop("error", "provider_error")
+        except Exception as exc:  # noqa: BLE001 - provider boundary normalizes errors, not secret text
+            receipt = getattr(provider, "last_receipt", None)
+            if receipt:
+                try:
+                    trace({"kind": "provider_error_reply", "reply": receipt})
+                except (OSError, ValueError, TypeError):
+                    return stop("error", "evidence_error")
+            code = (
+                str(exc)
+                if hasattr(exc, "receipt")
+                else getattr(provider, "last_error_code", None) or "provider_error"
+            )
+            return stop("incomplete" if code.startswith("provider_stop_") else "error", code)
         if not isinstance(reply, ModelReply):
             return stop("error", "invalid_reply")
         try:
@@ -108,8 +129,7 @@ async def advance_run(store, provider, run_id, trace_dir):
             return stop("error", "evidence_error")
         if bool(reply.tool_calls) == (reply.final_text is not None):
             return stop("error", "invalid_reply")
-        # There is no live adapter in this release. No caller can relabel fake output as live.
-        if reply.provider_identity != "offline_fake":
+        if reply.provider_identity != data.get("expected_provider", "offline_fake"):
             return stop("error", "unsupported_provider")
         data["messages"].append({"role": "assistant", "content": asdict(reply)})
         data["usage"].append(reply.usage)
