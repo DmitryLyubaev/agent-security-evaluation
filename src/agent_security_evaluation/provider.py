@@ -10,6 +10,9 @@ class ModelReply:
     final_text: str | None = None
     usage: dict | None = None
     provider_identity: str = "offline_fake"
+    provider_message: dict | None = None
+    stop_reason: str | None = None
+    request_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -17,6 +20,9 @@ class ModelRequest:
     messages: list[dict]
     tools: list[dict]
     limits: Limits
+    run_id: str | None = None
+    case_id: str | None = None
+    request_ordinal: int | None = None
 
 
 class Provider(Protocol):

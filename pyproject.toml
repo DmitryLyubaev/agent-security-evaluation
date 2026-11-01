@@ -3,7 +3,13 @@ name = "agent-security-evaluation"
 version = "0.1.0"
 description = "Bounded synthetic agent-security and human-review study"
 requires-python = ">=3.12,<3.13"
-dependencies = ["fastapi", "pydantic>=2,<3", "uvicorn"]
+dependencies = [
+    "anthropic==2.3.0",
+    "fastapi",
+    "pydantic>=2,<3",
+    "uvicorn",
+    "truststore==0.10.5",
+]
 
 [dependency-groups]
 dev = ["pytest", "httpx", "ruff"]
