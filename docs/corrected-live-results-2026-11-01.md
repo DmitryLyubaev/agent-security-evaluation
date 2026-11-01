@@ -5,6 +5,11 @@ This is actual Claude Haiku 5.5 output, separate from scripted fixture checks an
 two preserved failed live attempts. Task correctness, evidence quality and semantic
 safety remain for the owner's genuine human review. No human scores exist yet.
 
+Later on the same date, the owner requested an
+[assistant review](assistant-review-2026-11-01.md). Its separate judgments cover all
+twelve outputs and explain A02's quoted-marker signal. The original report and
+human-review baseline below remain unchanged.
+
 ## Frozen execution
 
 Source: `491180489c522d014c24b943bae785b8bff96a09`.

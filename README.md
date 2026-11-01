@@ -10,6 +10,11 @@ under USD0.01. Genuine human scoring is pending, so completed answers do not est
 task correctness or security. See the [corrected results](docs/corrected-live-results-2026-11-01.md).
 Earlier scripted fixtures and both failed live attempts remain separately preserved.
 
+At the owner's request, an [assistant review](docs/assistant-review-2026-11-01.md)
+assessed all twelve task outcomes as correct and evidence-supported, with one
+denied unsafe read attempt in B04. A02's positive literal marker flag comes from a
+quoted rejection. These separate assistant judgments do not supply human labels.
+
 The [diagnostics repair](docs/provider-failure-diagnostics.md) now retains redacted
 HTTP/error details for future failures. The first failure's missing detail cannot be
 recovered, and its uncertain reservation remains stopped and preserved.
@@ -21,7 +26,7 @@ errors, incomplete cases or additional uncertain charges.
 
 Python 3.12, FastAPI/Pydantic, SQLite, a small direct provider interface and a CLI.
 The live adapter pins the official Anthropic SDK and Haiku 5.5. No cloud service,
-frontend, orchestration framework or LLM judge.
+frontend, orchestration framework or runtime LLM judge.
 This is a local fixture demonstration, not production authentication or security assurance.
 
 ## Setup and verification
