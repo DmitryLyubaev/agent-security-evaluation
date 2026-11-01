@@ -8,7 +8,7 @@ from test_anthropic_provider import payload
 from test_study import ROOT
 
 
-def live_fixture(tmp_path):
+def live_fixture(tmp_path, *, cap_micro_usd=2_000_000):
     from agent_security_evaluation.allowance import AllowanceLedger
     from agent_security_evaluation.anthropic_provider import LiveProfile
     from agent_security_evaluation.live import prepare_live
@@ -39,6 +39,7 @@ def live_fixture(tmp_path):
         manifest_path,
         source_root=root,
         evidence_origin="test_fixture",
+        cap_micro_usd=cap_micro_usd,
         account={
             "account_id": "fixture-personal",
             "workspace_id": "fixture-workspace",
@@ -48,10 +49,10 @@ def live_fixture(tmp_path):
     )
     body = manifest["content"]
     ledger = AllowanceLedger(Path(body["paths"]["ledger"]))
-    ledger.prepare_allowance(manifest["manifest_sha256"])
+    ledger.prepare_allowance(manifest["manifest_sha256"], cap_micro_usd=cap_micro_usd)
     grant = {
         "manifest_sha256": manifest["manifest_sha256"],
-        "cap_micro_usd": 2_000_000,
+        "cap_micro_usd": cap_micro_usd,
         "prices_sha256": body["prices_sha256"],
         "source_commit": body["source_commit"],
         "approval_id": "TEST FIXTURE - no actual authority",
@@ -110,6 +111,18 @@ class SDKFixture:
             return httpx2.Response(
                 200, json={"input_tokens": 8193 if self.oversized else 100}, headers=headers
             )
+        if "speed" in body:
+            return httpx2.Response(
+                400,
+                json={
+                    "type": "error",
+                    "error": {
+                        "type": "invalid_request_error",
+                        "message": "Haiku 5.5 does not support the speed parameter",
+                    },
+                },
+                headers=headers,
+            )
         turns = sum(m["role"] == "assistant" for m in body["messages"])
         if turns == 0:
             self.case_index += 1
@@ -153,6 +166,10 @@ class SDKFixture:
             raw = payload(content=content, stop_reason="tool_use")
         else:
             raw = payload(content=[{"type": "text", "text": reply.final_text}])
+        # Schema-valid nullable usage from the pinned SDK, without a fast-mode feature.
+        raw["usage"]["speed"] = None
+        raw["usage"]["cache_creation_input_tokens"] = None
+        raw["usage"]["cache_read_input_tokens"] = None
         return httpx2.Response(200, json=raw, headers=headers)
 
     def factory(self, api_key, profile, *, workspace_id):

@@ -7,7 +7,7 @@ from dataclasses import asdict
 from importlib.metadata import version
 from pathlib import Path
 
-from .allowance import CAP, CASE_IDS, RESERVATION, AllowanceLedger, pricing_snapshot
+from .allowance import CAP, CASE_IDS, RESERVATION, AllowanceLedger, pricing_snapshot, validate_cap
 from .anthropic_provider import AnthropicProvider, LiveProfile, encode_request, make_client
 from .domain import Limits, canonical, digest
 from .evidence import file_sha256
@@ -45,7 +45,9 @@ def prepare_live(
     private_root=None,
     evidence_origin="live_model",
     account=None,
+    cap_micro_usd=CAP,
 ):
+    validate_cap(cap_micro_usd)
     root = Path(source_root or CODE_ROOT).resolve()
     private = Path(private_root or root / "private/p25-live").resolve()
     if not private.is_relative_to(root / "private"):
@@ -78,7 +80,7 @@ def prepare_live(
         "case_order": list(CASE_IDS),
         "generation_cap": 72,
         "count_cap": 72,
-        "cap_micro_usd": CAP,
+        "cap_micro_usd": cap_micro_usd,
         "reservation_micro_usd": RESERVATION,
         "evidence_origin": evidence_origin,
         "paths": {
@@ -114,6 +116,7 @@ def validate_manifest(manifest_path):
     if digest(body) != manifest["manifest_sha256"] or body.get("kind") != "p25-live-v1":
         raise ValueError("live_manifest_changed")
     profile = LiveProfile(**body["profile"])
+    validate_cap(body["cap_micro_usd"])
     if (
         body["prices"] != pricing_snapshot()
         or body["prices_sha256"] != digest(pricing_snapshot())
@@ -122,7 +125,6 @@ def validate_manifest(manifest_path):
         or body["case_order"] != list(CASE_IDS)
         or body["generation_cap"] != 72
         or body["count_cap"] != 72
-        or body["cap_micro_usd"] != CAP
         or body["reservation_micro_usd"] != RESERVATION
         or body["tools"] != tool_schemas()
         or body["provider_tools"] != _wire_tools(profile)
@@ -172,7 +174,7 @@ def validate_live_authority(manifest_path, grant_path, ledger_path):
     if (
         grant["manifest_sha256"] != manifest["manifest_sha256"]
         or grant["source_commit"] != body["source_commit"]
-        or grant["cap_micro_usd"] != CAP
+        or grant["cap_micro_usd"] != body["cap_micro_usd"]
         or grant["prices_sha256"] != body["prices_sha256"]
         or grant["ledger_path"] != body["paths"]["ledger"]
         or grant["store_path"] != body["paths"]["store"]

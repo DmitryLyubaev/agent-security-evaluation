@@ -15,7 +15,8 @@ proposal and explicit approval. Never reset an attempted allowance to obtain a r
 
 - Direct Anthropic `claude-haiku-5-5`, SDK 2.3.0, API 2026-10-21.
 - Thinking disabled, medium effort, automatic client-tool selection, nonstreaming,
-  standard-only service, standard speed and global inference geography. No caching,
+  standard-only service, default model speed and global inference geography. Omit the
+  unsupported `speed` request field for Haiku. No caching,
   server tools, sampling overrides, SDK/application retries or model fallback.
 - B01-B04, then A01-A08, once each. Three existing tools and one existing transition.
   Only B01 may receive one exact predeclared fixture approval. This is deterministic
@@ -29,6 +30,8 @@ proposal and explicit approval. Never reset an attempted allowance to obtain a r
   The Models schema has no client-tool support flag; support is documented for the
   pinned model. Actual model tool choices remain unobserved until the study.
 - USD2 gross token allowance before tax, FX and credits. Local durable warning at USD1.
+  A newly frozen proposal may select a lower cap, at least USD1.051136 and at most USD2;
+  its grant, summary and every reservation must use that exact cap.
   A provider budget email notification must also be confirmed before execution.
   Neither notification nor this ledger controls unrelated account usage or invoices.
 - Every generation first reserves 1,051,136 micro-USD: 1,048,576 context tokens at

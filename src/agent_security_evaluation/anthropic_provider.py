@@ -89,7 +89,6 @@ def encode_request(request, profile):
         "thinking": {"type": "disabled"},
         "output_config": {"effort": "medium"},
         "service_tier": "standard_only",
-        "speed": "standard",
         "inference_geo": "global",
         "tool_choice": {"type": "auto"},
         "tools": [
@@ -279,7 +278,6 @@ class AnthropicProvider:
                 "tools",
                 "tool_choice",
                 "output_config",
-                "speed",
                 "workspace_id",
             )
         }

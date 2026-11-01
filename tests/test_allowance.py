@@ -7,15 +7,15 @@ import pytest
 from test_anthropic_provider import payload
 
 
-def approved_ledger(tmp_path, *, begin=True):
+def approved_ledger(tmp_path, *, begin=True, cap_micro_usd=2_000_000):
     from agent_security_evaluation.allowance import AllowanceLedger, pricing_snapshot
     from agent_security_evaluation.domain import digest
 
     ledger = AllowanceLedger(tmp_path / "allowance.sqlite3")
-    proposal = ledger.prepare_allowance("a" * 64)
+    proposal = ledger.prepare_allowance("a" * 64, cap_micro_usd=cap_micro_usd)
     approval = {
         "manifest_sha256": "a" * 64,
-        "cap_micro_usd": 2_000_000,
+        "cap_micro_usd": cap_micro_usd,
         "prices_sha256": digest(pricing_snapshot()),
         "source_commit": "fixture-source",
         "approval_id": "TEST FIXTURE - no paid authority",

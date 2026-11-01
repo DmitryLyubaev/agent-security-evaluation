@@ -15,6 +15,12 @@ RESERVATION = 1_051_136
 CASE_IDS = tuple([f"B{i:02}" for i in range(1, 5)] + [f"A{i:02}" for i in range(1, 9)])
 
 
+def validate_cap(cap_micro_usd):
+    if type(cap_micro_usd) is not int or not RESERVATION <= cap_micro_usd <= CAP:
+        raise ValueError("unsupported_allowance")
+    return cap_micro_usd
+
+
 def pricing_snapshot():
     return {
         "date": "2026-11-01",
@@ -44,6 +50,10 @@ def integer(value):
     return value
 
 
+def optional_integer(value):
+    return 0 if value is None else integer(value)
+
+
 def parse_usage(payload, profile):
     if payload.get("model") != profile.model or not isinstance(payload.get("usage"), dict):
         raise ValueError("missing_or_wrong_model_usage")
@@ -63,7 +73,8 @@ def parse_usage(payload, profile):
     }
     if any(value is not None for key, value in usage.items() if key not in allowed):
         raise ValueError("unsupported_usage_category")
-    if usage.get("speed") != "standard" or usage.get("service_tier") != "standard":
+    # Haiku rejects the speed request field. Its optional usage annotation may be null.
+    if usage.get("speed") not in (None, "standard") or usage.get("service_tier") != "standard":
         raise ValueError("unsupported_service_class")
     if usage.get("inference_geo") != "global" or usage.get("iterations"):
         raise ValueError("unsupported_usage_scope")
@@ -71,8 +82,8 @@ def parse_usage(payload, profile):
         if key not in ("web_fetch_requests", "web_search_requests") or integer(value):
             raise ValueError("server_tool_charge_not_allowed")
     inp, out = integer(usage.get("input_tokens")), integer(usage.get("output_tokens"))
-    creation = integer(usage.get("cache_creation_input_tokens", 0))
-    read = integer(usage.get("cache_read_input_tokens", 0))
+    creation = optional_integer(usage.get("cache_creation_input_tokens"))
+    read = optional_integer(usage.get("cache_read_input_tokens"))
     cache = usage.get("cache_creation") or {}
     write5 = integer(cache.get("ephemeral_5m_input_tokens", 0))
     write1h = integer(cache.get("ephemeral_1h_input_tokens", 0))
@@ -157,18 +168,15 @@ class AllowanceLedger:
         return grant
 
     def prepare_allowance(self, manifest_sha256, cap_micro_usd=CAP):
-        if (
-            not isinstance(manifest_sha256, str)
-            or len(manifest_sha256) != 64
-            or cap_micro_usd != CAP
-        ):
+        validate_cap(cap_micro_usd)
+        if not isinstance(manifest_sha256, str) or len(manifest_sha256) != 64:
             raise ValueError("unsupported_allowance")
         with self.transaction():
             if self._get("proposal"):
                 raise ValueError("allowance_already_exists")
             proposal = {
                 "manifest_sha256": manifest_sha256,
-                "cap_micro_usd": CAP,
+                "cap_micro_usd": cap_micro_usd,
                 "prices_sha256": digest(pricing_snapshot()),
                 "authorized": False,
             }
@@ -243,7 +251,7 @@ class AllowanceLedger:
         s = self.summary()
         if s["outstanding_micro_usd"] or s["uncertain_micro_usd"]:
             raise ValueError("dispatch_in_flight_or_uncertain")
-        if s["settled_micro_usd"] + RESERVATION > CAP:
+        if s["settled_micro_usd"] + RESERVATION > s["cap_micro_usd"]:
             raise ValueError("insufficient_allowance")
 
     def permit_count(self, case_id, request_ordinal):
@@ -348,6 +356,7 @@ class AllowanceLedger:
         return parsed["micro_usd"]
 
     def summary(self):
+        cap = (self._get("proposal") or {}).get("cap_micro_usd", CAP)
         values = {
             state: total
             for state, total in self.conn.execute(
@@ -355,11 +364,11 @@ class AllowanceLedger:
             )
         }
         return {
-            "cap_micro_usd": CAP,
+            "cap_micro_usd": cap,
             "settled_micro_usd": values.get("settled", 0),
             "outstanding_micro_usd": values.get("reserved", 0),
             "uncertain_micro_usd": values.get("uncertain", 0),
-            "remaining_micro_usd": CAP - sum(values.values()),
+            "remaining_micro_usd": cap - sum(values.values()),
             "count_attempts": self.conn.execute("SELECT count(*) FROM counts").fetchone()[0],
             "generation_attempts": self.conn.execute("SELECT count(*) FROM calls").fetchone()[0],
             "alert_triggered": bool(self.conn.execute("SELECT 1 FROM alerts").fetchone()),

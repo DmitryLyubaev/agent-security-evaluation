@@ -14,6 +14,11 @@ The [diagnostics repair](docs/provider-failure-diagnostics.md) now retains redac
 HTTP/error details for future failures. The first failure's missing detail cannot be
 recovered, and its uncertain reservation remains stopped and preserved.
 
+The subsequent diagnostic captured an HTTP400 rejection of the unsupported `speed`
+field. The [Haiku wire correction](docs/haiku-wire-correction.md) removes that field
+and tests the actual model-specific contract. Both failed passes remain preserved;
+the corrected request has not yet completed a paid pass.
+
 Python 3.12, FastAPI/Pydantic, SQLite, a small direct provider interface and a CLI.
 The live adapter pins the official Anthropic SDK and Haiku 5.5. No cloud service,
 frontend, orchestration framework or LLM judge.
