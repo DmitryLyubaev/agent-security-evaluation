@@ -230,3 +230,59 @@ def test_client_refuses_environment_header_overrides(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_CUSTOM_HEADERS", "anthropic-beta: unapproved-mode")
     with pytest.raises(ValueError, match="custom_headers_not_allowed"):
         make_client("fixture-not-a-key", LiveProfile())
+
+
+@pytest.mark.parametrize("mode", ["success", "oversized", "network_error"])
+def test_adapter_budget_guard_and_actual_sdk_receipt(tmp_path, mode):
+    import httpx2 as httpx
+    from test_allowance import approved_ledger
+
+    from agent_security_evaluation.anthropic_provider import (
+        AnthropicProvider,
+        LiveProfile,
+        make_client,
+    )
+
+    ledger, _ = approved_ledger(tmp_path)
+    calls = []
+
+    async def handler(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("count_tokens"):
+            return httpx.Response(200, json={"input_tokens": 8193 if mode == "oversized" else 100})
+        if mode == "network_error":
+            raise httpx.ReadTimeout("fixture timeout")
+        return httpx.Response(
+            200,
+            json=payload(),
+            headers={"request-id": "req-fixture", "anthropic-workspace-id": "fixture-workspace"},
+        )
+
+    async def run():
+        client = make_client(
+            "fixture-not-a-key",
+            LiveProfile(),
+            http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+        )
+        provider = AnthropicProvider(client, LiveProfile(), ledger)
+        request = ModelRequest(
+            [{"role": "user", "content": "fixture"}], tool_schemas(), Limits(), "run-B01", "B01", 1
+        )
+        try:
+            if mode == "success":
+                reply = await provider.complete(request)
+                assert reply.request_id == "req-fixture"
+                assert ledger.summary()["settled_micro_usd"] == 20
+                receipt = json.loads(ledger.receipts()[0]["receipt"])["raw"]
+                assert receipt["_request_body"]["model"] == "claude-haiku-5-5"
+            else:
+                with pytest.raises((ValueError, Exception)):
+                    await provider.complete(request)
+        finally:
+            await client.close()
+
+    asyncio.run(run())
+    assert len(calls) == (1 if mode == "oversized" else 2)
+    assert ledger.summary()["generation_attempts"] == (0 if mode == "oversized" else 1)
+    if mode == "network_error":
+        assert ledger.summary()["uncertain_micro_usd"] == 1_051_136

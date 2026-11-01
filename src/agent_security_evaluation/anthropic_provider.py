@@ -7,7 +7,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .domain import ToolCall, canonical
+from .domain import ToolCall, canonical, digest
 from .provider import ModelReply
 
 
@@ -180,9 +180,67 @@ def make_client(api_key, profile, *, http_client=None, workspace_id=None):
 class AnthropicProvider:
     def __init__(self, client, profile, allowance):
         self.client, self.profile, self.allowance = client, profile, allowance
+        self.last_receipt = None
+        self.last_error_code = None
 
     async def complete(self, request):
-        raise ValueError("live_allowance_not_wired")
+        from .allowance import integer
+
+        if not request.run_id or not request.case_id or request.request_ordinal is None:
+            raise ValueError("trusted_request_identity_required")
+        body = encode_request(request, self.profile)
+        body["workspace_id"] = self.allowance.authorization["workspace_id"]
+        self.allowance.permit_count(request.case_id, request.request_ordinal)
+        count_body = {
+            key: value
+            for key, value in body.items()
+            if key
+            in (
+                "model",
+                "messages",
+                "system",
+                "thinking",
+                "tools",
+                "tool_choice",
+                "output_config",
+                "speed",
+                "workspace_id",
+            )
+        }
+        try:
+            counted = await self.client.messages.count_tokens(**count_body)
+            if integer(counted.input_tokens) > self.profile.input_estimate_tokens:
+                raise ValueError("input_estimate_limit")
+        except Exception:
+            self.allowance.halt("token_count_failed")
+            raise
+        reservation = self.allowance.reserve(
+            request.case_id,
+            request.request_ordinal,
+            run_id=request.run_id,
+            request_sha256=digest(body),
+        )
+        try:
+            response = await self.client.messages.with_raw_response.create(**body)
+            http_response = response.http_response
+            raw = json.loads(http_response.text)
+            raw["_request_id"] = http_response.headers.get("request-id")
+            raw["_workspace_id"] = http_response.headers.get("anthropic-workspace-id")
+            raw["_request_body"] = json.loads(http_response.request.content)
+            self.last_receipt = raw
+            if raw["_workspace_id"] != self.allowance.authorization["workspace_id"]:
+                raise ProtocolError("provider_workspace_mismatch", raw)
+        except BaseException:  # financial reservation survives cancellation or unknown acceptance
+            self.last_error_code = "provider_request_uncertain"
+            self.allowance.mark_uncertain(reservation.reservation_id, self.last_error_code)
+            raise
+        self.allowance.settle(reservation.reservation_id, raw)
+        try:
+            return decode_response(raw, self.profile)
+        except ProtocolError as exc:
+            if str(exc) != "provider_stop_max_tokens":
+                self.allowance.halt("provider_protocol_error")
+            raise
 
 
 async def _tls_probe():
