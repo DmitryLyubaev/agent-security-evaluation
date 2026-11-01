@@ -43,14 +43,14 @@ Claims: identify local results and pending hosted verification separately.
 publication-readiness report. Update only Project 25 records in portfolio-plan.
 No product interface or runtime behavior changes.
 
-- [ ] Add the single-job workflow and validate it with actionlint.
-- [ ] Scan the tracked tree and full reachable history for accidental credentials
+- [x] Add the single-job workflow and validate it with actionlint.
+- [x] Scan the tracked tree and full reachable history for accidental credentials
   and private evidence; record only redacted findings and safe aggregates.
-- [ ] Export only tracked source and run frozen install, Ruff, all tests and CLI
+- [x] Export only tracked source and run frozen install, Ruff, all tests and CLI
   help on Linux without the original private directories or credentials.
-- [ ] Finalize the README and dated report with actual results, AI-assisted
+- [x] Finalize the README and dated report with actual results, AI-assisted
   provenance, the literal A02 signal and preserved earlier failures.
-- [ ] Review the diff, verify unchanged frozen files and archive hashes, commit
+- [x] Review the diff, verify unchanged frozen files and archive hashes, commit
   the prepared source, and update tracker/handover with the exact commit.
 
 No tests that merely assert YAML text will be added. actionlint and executing the

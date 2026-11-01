@@ -51,22 +51,24 @@ uv run pytest -q
 uv run agent-security --help
 ```
 
+If uv reports `UnknownIssuer` on this Windows host, use `uv --native-tls sync --frozen`
+to use the system trust store. Do not disable TLS verification. The actual plain-HTTP
+server test uses `http.client`; this host's `httpx.Client` TLS setup independently
+reproduced a fatal OpenSSL initialization error. httpx ASGI tests pass without that setup.
+
 ## Offline CI
 
-[The workflow](.github/workflows/ci.yml) runs on GitHub-hosted Ubuntu 24.04 with
+[The workflow](.github/workflows/ci.yml) targets GitHub-hosted Ubuntu 24.04 with
 Python 3.12 and uv 0.10.7. It installs `uv.lock` without resolving new versions, then
 runs Ruff, all pytest tests and CLI help. Checkout/setup actions are pinned to
 commit IDs; repository permissions are read-only, checkout credentials are not
 persisted and the provider key is empty. There is no capture upload or paid study.
 
-Workflow syntax is checked locally with actionlint. Hosted CI has not run yet;
-publication is awaiting owner approval. Local results are recorded separately from
-future hosted verification.
-
-If uv reports `UnknownIssuer` on this Windows host, use `uv --native-tls sync --frozen`
-to use the system trust store. Do not disable TLS verification. The actual plain-HTTP
-server test uses `http.client`; this host's `httpx.Client` TLS setup independently
-reproduced a fatal OpenSSL initialization error. httpx ASGI tests pass without that setup.
+On 1 November 2026, a source-only Linux container passed **154 tests in 142.42 seconds**,
+plus frozen install, Ruff and CLI checks, without private captures or provider
+credentials. actionlint passed and the redacted full-history secret scan found no
+leaks. These are local checks; hosted CI has not run yet. See the
+[publication-readiness report](docs/publication-readiness-2026-11-01.md).
 
 ## Local API and explicit approval
 
