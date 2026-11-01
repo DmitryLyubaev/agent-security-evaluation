@@ -254,13 +254,20 @@ async def run_live_study(
         "runs": {cid: None for cid in CASE_IDS},
         "provenance": body["evidence_origin"],
         "provider_identity": profile.provider_identity,
+        "grant_sha256": digest(grant),
+        "approval_id": grant["approval_id"],
         "created_at": time.time(),
     }
     if store.conn.execute("SELECT 1 FROM studies WHERE id=?", (study_id,)).fetchone():
         ledger.close()
         raise ValueError("study_already_attempted")
+    # A failed claimant owns no shared state and must never run owner cleanup.
     try:
         ledger.begin_study(study_id)
+    except BaseException:
+        ledger.close()
+        raise
+    try:
         save_study(store, study)
         client = (client_factory or make_client)(key, profile, workspace_id=grant["workspace_id"])
         ledger.permit_metadata()

@@ -93,6 +93,17 @@ credential access. Another process cannot claim the grant, and a restart/new out
 directory cannot resume or reset it. Preserve errors, missing receipts and later unrun
 slots. Do not run an inference warm-up, paid retry, new grant or tuned case set.
 
+Failed concurrent claimants cannot halt or overwrite the owning study. Multiple
+proposals in one reply receive decisions in response order, with at most one exact
+B01 grant, without additional model turns or reset counters. Empty terminal answers
+are incomplete and excluded from human-review packets.
+
+Reporting opens the manifest-bound allowance ledger read-only, validates its grant
+identity and reads a consistent snapshot. A hard process exit therefore retains visible
+attempts and outstanding reservations even if coordinator cleanup never ran. Missing
+or mismatched ledger evidence makes current exposure unknown, never zero. Preserve
+both databases, the source checkout and traces together for later reports.
+
 ## Human review and results
 
 Export every completed output through `review-export`. The packet contains the trusted

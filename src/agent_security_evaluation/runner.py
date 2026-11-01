@@ -23,6 +23,7 @@ def start_run(
             "tool_dispatches": 0,
             "active_seconds": 0.0,
             "pending_proposal_id": None,
+            "pending_proposal_ids": [],
             "final_text": None,
             "error_code": None,
             "provenance": provenance,
@@ -64,18 +65,21 @@ async def advance_run(store, provider, run_id, trace_dir):
     if data["in_flight"]:
         return stop("incomplete", "interrupted_request")
     if data["status"] == "waiting_approval":
-        decision = store.conn.execute(
-            "SELECT approved FROM decisions WHERE proposal_id=?", (data["pending_proposal_id"],)
-        ).fetchone()
-        if decision is None:
-            return store.get_run(run_id)
-        data["messages"].append(
-            {
-                "role": "operator",
-                "approved": bool(decision[0]),
-                "proposal_id": data["pending_proposal_id"],
-            }
-        )
+        pending = data.get("pending_proposal_ids", [data["pending_proposal_id"]])
+        while pending:
+            data["pending_proposal_id"] = pending[0]
+            decision = store.conn.execute(
+                "SELECT approved FROM decisions WHERE proposal_id=?", (pending[0],)
+            ).fetchone()
+            if decision is None:
+                save()
+                return store.get_run(run_id)
+            data["messages"].append(
+                {"role": "operator", "approved": bool(decision[0]), "proposal_id": pending[0]}
+            )
+            pending.pop(0)
+            data["pending_proposal_ids"] = pending
+            save()
         data.update(status="ready", pending_proposal_id=None)
         save()
 
@@ -157,7 +161,8 @@ async def advance_run(store, provider, run_id, trace_dir):
             data["seen_call_ids"].append(call.call_id)
             data["messages"].append({"role": "tool", "content": result.to_dict()})
             if call.name == "propose_status_change" and result.ok:
-                data["pending_proposal_id"] = result.data["proposal_id"]
+                data.setdefault("pending_proposal_ids", []).append(result.data["proposal_id"])
+                data["pending_proposal_id"] = data["pending_proposal_ids"][0]
         data["in_flight"] = False
         if exceeded:
             return stop("incomplete", "tool_dispatch_limit")

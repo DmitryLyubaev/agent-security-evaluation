@@ -3,6 +3,7 @@
 import contextlib
 import io
 import json
+import os
 import socket
 import sys
 import time
@@ -51,6 +52,15 @@ def run(root, scenario):
         is False
     )
     server = sdk_fixture_for(manifest, fail_case="B01" if scenario == "interrupted" else None)
+    if scenario == "hardexit":
+        handler = server.handler
+
+        async def exit_after_reserved(request):
+            if request.url.path == "/v1/messages":
+                os._exit(23)
+            return await handler(request)
+
+        server.handler = exit_after_reserved
     original = live.run_live_study
 
     async def injected(*a, **kw):

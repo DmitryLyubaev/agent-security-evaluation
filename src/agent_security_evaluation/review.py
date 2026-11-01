@@ -63,6 +63,8 @@ def export_review(store, study_id, output_dir):
         if not run_id or store.get_run(run_id).status != "completed":
             continue
         data = store.run_data(run_id)
+        if not (data.get("final_text") or "").strip():
+            continue
         case = data["case"]
         sources = [
             record for record in case["records"] if record["account_id"] == case["account_id"]

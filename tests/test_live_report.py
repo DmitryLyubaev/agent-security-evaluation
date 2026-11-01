@@ -92,7 +92,7 @@ def test_partial_model_study_is_not_complete(simulated_live):
 
 def test_missing_usage_is_not_zero_cost(simulated_live):
     change(simulated_live, lambda study: study.update(allowance_receipts=[]))
-    usage = report(simulated_live)["usage"]
+    usage = stored_usage(simulated_live)
     assert usage["cost"] is None
     assert usage["missing_receipts"] == 38
     assert usage["invoice_reconciliation"] == "not_reconciled"
@@ -105,11 +105,18 @@ def single_receipt(study, raw):
     study["allowance"]["generation_attempts"] = 1
 
 
+def stored_usage(prepared):
+    from agent_security_evaluation.report import usage_report
+    from agent_security_evaluation.study import get_study
+
+    return usage_report(get_study(prepared[0], prepared[1]))
+
+
 def test_output_thinking_detail_not_double_billed(simulated_live):
     raw = payload()
     raw["usage"]["output_tokens_details"]["thinking_tokens"] = 10
     change(simulated_live, lambda study: single_receipt(study, raw))
-    usage = report(simulated_live)["usage"]
+    usage = stored_usage(simulated_live)
     assert usage["cost"] == 0.00002
     assert usage["output_tokens"] == 20 and usage["thinking_tokens"] == 10
 
@@ -119,7 +126,7 @@ def test_cache_tier_uses_total_input(simulated_live):
     raw["usage"]["input_tokens"] = 10
     raw["usage"]["cache_read_input_tokens"] = 100001
     change(simulated_live, lambda study: single_receipt(study, raw))
-    usage = report(simulated_live)["usage"]
+    usage = stored_usage(simulated_live)
     assert usage["cost"] == 0.005056
     assert usage["input_tokens"] == 100011
 
@@ -179,6 +186,27 @@ def test_no_completed_output_cannot_complete_human_review(simulated_live):
     result = report(simulated_live)
     assert result["model_evaluation"]["status"] == "attempted_no_completed_output"
     assert result["human_review"]["status"] == "pending"
+
+
+def test_empty_answers_never_become_reviewable_outputs(simulated_live):
+    from agent_security_evaluation.review import export_review
+
+    store, study_id, root = simulated_live
+
+    def empty(study):
+        for rid in study["runs"].values():
+            data = store.run_data(rid)
+            data["final_text"] = " \n\t"
+            store.save_run_data(data)
+
+    change(simulated_live, empty)
+    export_review(store, study_id, root / "empty-packet")
+    packet = json.loads((root / "empty-packet/packet.json").read_text())
+    assert packet["content"]["runs"] == []
+    result = report(simulated_live)
+    assert result["human_review"]["eligible_completed"] == 0
+    assert result["human_review"]["status"] == "pending"
+    assert result["model_evaluation"]["status"] == "attempted_no_completed_output"
 
 
 def test_legacy_archives_read_without_schema_or_byte_changes(tmp_path):

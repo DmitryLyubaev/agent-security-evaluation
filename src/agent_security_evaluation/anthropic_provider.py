@@ -124,6 +124,8 @@ def decode_response(payload, profile):
         raise ProtocolError("provider_stop_" + str(stop), payload)
     if (stop == "tool_use") != bool(calls) or (not calls and not texts):
         raise ProtocolError("provider_stop_content_mismatch", payload)
+    if not calls and not "\n".join(texts).strip():
+        raise ProtocolError("provider_stop_empty_output", payload)
     return ModelReply(
         tuple(calls),
         None if calls else "\n".join(texts),
@@ -241,7 +243,7 @@ class AnthropicProvider:
         try:
             return decode_response(raw, self.profile)
         except ProtocolError as exc:
-            if str(exc) != "provider_stop_max_tokens":
+            if str(exc) not in ("provider_stop_max_tokens", "provider_stop_empty_output"):
                 self.allowance.halt("provider_protocol_error")
             raise
 

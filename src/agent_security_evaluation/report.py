@@ -1,11 +1,54 @@
 import json
+import sqlite3
 from pathlib import Path
 
-from .allowance import parse_usage
+from .allowance import AllowanceLedger, parse_usage
 from .anthropic_provider import LiveProfile
-from .domain import canonical
+from .domain import canonical, digest
 from .review import verify_study_evidence
 from .study import get_study
+
+
+def reconcile_allowance(study):
+    """Read one consistent snapshot of the bound ledger, including after a hard exit."""
+    if study.get("provenance", "offline_fake") == "offline_fake":
+        return
+    study["_allowance_evidence"] = "unavailable"
+    try:
+        manifest = study["manifest"]
+        body = manifest["content"]
+        paths = body["paths"]
+        evidence = Path(paths["evidence"]).resolve()
+        path = Path(paths["ledger"]).resolve()
+        if (
+            not evidence.is_relative_to(Path(manifest["source_root"]).resolve() / "private")
+            or path != evidence / "allowance.sqlite3"
+            or Path(paths["store"]).resolve() != evidence / "runs.sqlite3"
+            or Path(study["evidence_dir"]).resolve() != evidence
+        ):
+            raise ValueError("ledger_path_mismatch")
+        ledger = AllowanceLedger(path, read_only=True)
+        try:
+            ledger.conn.execute("BEGIN")
+            grant = ledger.authorization
+            if (
+                grant["manifest_sha256"] != manifest["manifest_sha256"]
+                or digest(grant) != study.get("grant_sha256")
+                or grant["source_commit"] != body["source_commit"]
+                or grant["prices_sha256"] != body["prices_sha256"]
+                or grant["ledger_path"] != str(path)
+                or grant["store_path"] != paths["store"]
+                or grant["evidence_dir"] != paths["evidence"]
+            ):
+                raise ValueError("ledger_grant_mismatch")
+            study["allowance"] = ledger.summary()
+            study["allowance_receipts"] = ledger.receipts()
+            study["_allowance_evidence"] = "bound_ledger_read_only"
+        finally:
+            ledger.close()
+    except (ValueError, KeyError, TypeError, OSError, sqlite3.Error):
+        # Stored receipts still show known charges, but cannot prove current exposure.
+        study["allowance"] = {}
 
 
 def usage_report(study):
@@ -29,8 +72,8 @@ def usage_report(study):
         except (ValueError, KeyError, TypeError):
             continue
     count = len(supported)
-    attempts = allowance.get("generation_attempts", len(rows))
-    missing = max(0, attempts - count)
+    attempts = allowance.get("generation_attempts")
+    missing = max(0, attempts - count) if attempts is not None else None
     cost_micro = sum(receipt["micro_usd"] for receipt in supported)
     return {
         "input_tokens": sum(r["total_input_tokens"] for r in supported) if count else None,
@@ -42,14 +85,15 @@ def usage_report(study):
         }
         if count
         else None,
-        "cost": cost_micro / 1_000_000 if count and not missing else None,
+        "cost": cost_micro / 1_000_000 if count and missing == 0 else None,
         "supported_receipt_micro_usd": cost_micro if count else None,
         "currency": "USD",
         "receipt_count": count,
         "generation_attempts": attempts,
         "missing_receipts": missing,
-        "uncertain_reserved_micro_usd": allowance.get("uncertain_micro_usd", 0),
-        "outstanding_reserved_micro_usd": allowance.get("outstanding_micro_usd", 0),
+        "uncertain_reserved_micro_usd": allowance.get("uncertain_micro_usd"),
+        "outstanding_reserved_micro_usd": allowance.get("outstanding_micro_usd"),
+        "ledger_evidence": study.get("_allowance_evidence", "stored_snapshot"),
         "invoice_reconciliation": "not_reconciled",
         "basis": "gross token usage before tax/FX/credits",
         "reason": "Mocked receipts; no real charges"
@@ -61,6 +105,7 @@ def usage_report(study):
 def build_report(store, study_id, output_path):
     study = get_study(store, study_id)
     verify_study_evidence(store, study)
+    reconcile_allowance(study)
     rows = []
     totals = {
         "unsafe_attempts": 0,
@@ -76,6 +121,8 @@ def build_report(store, study_id, output_path):
             rows.append({"case_id": case_id, "status": "unrun"})
             continue
         data = store.run_data(run_id)
+        if data["status"] == "completed" and not (data.get("final_text") or "").strip():
+            data.update(status="incomplete", error_code="empty_final_output")
         states.append(data["status"])
         active_seconds += data["active_seconds"]
         case = data["case"]
@@ -185,7 +232,7 @@ def build_report(store, study_id, output_path):
         if batch["provenance"] == "human"
         and any(label["case_id"] in eligible for label in batch["labels"])
     }
-    if origin != "live_model" or not usage.get("generation_attempts", 0):
+    if origin != "live_model" or usage.get("generation_attempts") == 0:
         model_status = "not_run"
     elif counts["completed"] == counts["planned"]:
         model_status = "completed"

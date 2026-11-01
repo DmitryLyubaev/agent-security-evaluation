@@ -109,8 +109,14 @@ class Reservation:
 
 
 class AllowanceLedger:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, read_only=False):
         self.path = Path(path).resolve()
+        if read_only:
+            self.conn = sqlite3.connect(
+                self.path.as_uri() + "?mode=ro", uri=True, isolation_level=None, timeout=10
+            )
+            self.conn.row_factory = sqlite3.Row
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path, isolation_level=None, timeout=10)
         self.conn.row_factory = sqlite3.Row

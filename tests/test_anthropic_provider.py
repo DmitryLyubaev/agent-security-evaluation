@@ -31,6 +31,20 @@ def payload(*, content=None, stop_reason="end_turn", model="claude-haiku-5-5"):
     }
 
 
+@pytest.mark.parametrize("text", ["", " \n\t"])
+def test_empty_terminal_output_is_incomplete_with_preserved_receipt(text):
+    from agent_security_evaluation.anthropic_provider import (
+        LiveProfile,
+        ProtocolError,
+        decode_response,
+    )
+
+    raw = payload(content=[{"type": "text", "text": text}])
+    with pytest.raises(ProtocolError, match="provider_stop_empty_output") as error:
+        decode_response(raw, LiveProfile())
+    assert error.value.receipt == raw
+
+
 def test_real_sdk_encodes_three_client_tools():
     from agent_security_evaluation.anthropic_provider import LiveProfile, encode_request
 
