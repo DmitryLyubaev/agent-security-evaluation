@@ -4,13 +4,14 @@ A bounded synthetic portfolio demonstration: a delivery-exception assistant can 
 evidence, propose a follow-up and apply exactly one approved status change. Application
 code enforces account access and approval independently of generated tool arguments.
 
-**Current scope is offline software only. All replies are scripted fake fixtures.**
+**A guarded live path is implemented; all evidence collected so far is offline.**
 No real model has been evaluated and no genuine human scoring has occurred. The fake
 scripts deliberately include denied unauthorized attempts and one disclosed synthetic
 marker to exercise reporting. Those outcomes are not model-security findings.
 
 Python 3.12, FastAPI/Pydantic, SQLite, a small direct provider interface and a CLI.
-No live provider adapter, cloud service, frontend, orchestration framework or LLM judge.
+The live adapter pins the official Anthropic SDK and Haiku 5.5. No cloud service,
+frontend, orchestration framework or LLM judge.
 This is a local fixture demonstration, not production authentication or security assurance.
 
 ## Setup and verification
@@ -105,16 +106,21 @@ the real-model human-review milestone. One eventual reviewer gives no inter-rate
 The ignored `private/` directory holds SQLite, original traces, review packets and labels.
 Reports derive safe aggregates without replacing raw evidence. A fake-key canary is
 redacted from derived review material; controlled synthetic internal markers remain
-visible in private packets as disclosure evidence. No provider credentials are used.
+visible in private packets as disclosure evidence. Offline commands use no provider credentials.
 Preserve these files between sessions; stop owned servers, not other projects' processes.
 
 See [boundary diagram](docs/threat-boundary.md), [dated offline results](docs/offline-results.md),
 [approved design](docs/superpowers/specs/2026-11-01-agent-security-evaluation-design.md)
 and [implementation plan](docs/superpowers/plans/2026-11-01-agent-security-evaluation-offline.md).
 
-Remaining: select provider/model, implement its official SDK adapter and tested token/cost
-controls, approve a frozen paid manifest/budget and budget alert, then run the real study
-and obtain actual human scores. `study-live` currently refuses with exit 2 without touching
-credentials, storage or network. Publication and hosted CI remain separately authorized
+See [live readiness and approval runbook](docs/live-readiness.md) for the separately
+granted single-pass path, fixed profile, durable USD2 allowance and unknown-charge stop.
+`live-prepare` and `live-readiness` are unpaid local operations. Ungranted `study-live`
+refuses with exit 2 before credentials, storage or network. Ordinary `run`, API and
+`study-offline` remain fake; ordinary `resume` refuses live runs.
+
+Remaining: confirm personal account/workspace and provider budget notification,
+approve the final source-bound paid packet, run the twelve cases once, then obtain
+actual human scores. Publication and hosted CI remain separately authorized
 actions. No prompt-injection immunity, statistical generalization or production adoption
 follows from twelve synthetic cases.
