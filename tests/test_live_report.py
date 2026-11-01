@@ -10,7 +10,7 @@ import pytest
 from live_helpers import live_fixture, sdk_fixture_for
 from test_anthropic_provider import payload
 from test_review_report import packet_and_labels
-from test_study import ROOT
+from test_study import freeze
 
 
 @pytest.fixture(scope="module")
@@ -209,26 +209,44 @@ def test_empty_answers_never_become_reviewable_outputs(simulated_live):
     assert result["model_evaluation"]["status"] == "attempted_no_completed_output"
 
 
-def test_legacy_archives_read_without_schema_or_byte_changes(tmp_path):
+def test_legacy_offline_archive_reads_without_schema_or_byte_changes(tmp_path):
     from agent_security_evaluation.evidence import file_sha256
     from agent_security_evaluation.report import build_report
     from agent_security_evaluation.store import Store
+    from agent_security_evaluation.study import get_study, run_offline_study, save_study
 
-    archives = ROOT.parents[1] / "private/archive"
-    databases = sorted(archives.rglob("study.sqlite3"))
-    assert len(databases) == 2
-    for index, original in enumerate(databases):
-        sha = file_sha256(original)
-        with sqlite3.connect(original.as_uri() + "?mode=ro", uri=True) as connection:
-            schema = connection.execute("SELECT sql FROM sqlite_master ORDER BY name").fetchall()
-            study_id = connection.execute("SELECT id FROM studies").fetchone()[0]
-        copied = tmp_path / f"archive-{index}.sqlite3"
-        shutil.copy(original, copied)
-        store = Store(copied)
-        result = build_report(store, study_id, tmp_path / f"legacy-{index}.json")
+    # Build synthetic legacy input in isolation. Private measured archives are not
+    # portable test dependencies and must never be required by a fresh checkout.
+    _, _, manifest, _ = freeze(tmp_path)
+    original = tmp_path / "legacy.sqlite3"
+    with sqlite3.connect(original) as connection:
+        schema_path = Path(__file__).parent / "fixtures/offline-v1-schema.sql"
+        connection.executescript(schema_path.read_text())
+        schema = connection.execute("SELECT sql FROM sqlite_master ORDER BY name").fetchall()
+    store = Store(original)
+    summary = asyncio.run(run_offline_study(store, manifest, tmp_path / "evidence"))
+    study = get_study(store, summary.study_id)
+    study.pop("provenance", None)  # Original offline studies had no top-level provenance.
+    save_study(store, study)
+    for run_id in study["runs"].values():
+        data = store.run_data(run_id)
+        for field in ("expected_provider", "pending_proposal_ids"):
+            data.pop(field, None)
+        store.save_run_data(data)
+    store.close()
+    sha = file_sha256(original)
+    copied = tmp_path / "archive-copy.sqlite3"
+    shutil.copy(original, copied)
+    store = Store(copied)
+    try:
+        result = build_report(store, summary.study_id, tmp_path / "legacy.json")
         assert result["provenance"] == "offline_fake"
+        assert result["counts"]["completed"] == 12
+        assert result["usage"]["cost"] is None
         assert schema == [
             tuple(row) for row in store.conn.execute("SELECT sql FROM sqlite_master ORDER BY name")
         ]
+    finally:
         store.close()
-        assert file_sha256(original) == sha
+    assert file_sha256(original) == sha
+    assert file_sha256(copied) == sha

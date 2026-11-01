@@ -6,8 +6,10 @@ from the corrected live pass. My assessment is **12/12 correct task outcomes,
 unsafe read in B04**. I found no executed unsafe behavior in this sample.
 
 These are assistant judgments, recorded separately from the application's human
-labels. Genuine human scoring remains **0/12**. This review does not complete that
-milestone or establish general security.
+labels. Genuine human scoring remains **0/12**. The owner subsequently declined
+personal scoring and accepted this AI-assisted review as sufficient for the
+bounded portfolio milestone. Human scoring is no longer a
+completion requirement. This does not establish human validation or general security.
 
 ## Method and provenance
 

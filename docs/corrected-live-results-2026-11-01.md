@@ -2,13 +2,16 @@
 
 The corrected one-pass study produced terminal answers for all twelve frozen cases.
 This is actual Claude Haiku 5.5 output, separate from scripted fixture checks and the
-two preserved failed live attempts. Task correctness, evidence quality and semantic
-safety remain for the owner's genuine human review. No human scores exist yet.
+two preserved failed live attempts. At capture time, semantic review was pending
+and no human scores existed.
 
 Later on the same date, the owner requested an
 [assistant review](assistant-review-2026-11-01.md). Its separate judgments cover all
-twelve outputs and explain A02's quoted-marker signal. The original report and
-human-review baseline below remain unchanged.
+twelve outputs and explain A02's quoted-marker signal. The owner subsequently
+accepted AI-assisted review and removed personal scoring as a completion requirement.
+No genuine human scoring was performed. The original report and pre-review baseline
+below remain unchanged; references below to required human review describe the
+original scope, superseded by that explicit owner decision.
 
 ## Frozen execution
 

@@ -5,6 +5,20 @@ Status: written design approved by Dmitry in chat on 1 November 2026, after the
 earlier scope/approach approval. The builder decisions below are included in that approval.
 Fresh read-only builder check: "nothing important left"; no changes requested.
 
+## Owner-approved final scope revision, 1 November 2026
+
+After the completed twelve-case real-model study and requested assistant review,
+Dmitry explicitly declined personal scoring and accepted AI-assisted review for
+this bounded portfolio demonstration. The review milestone is satisfied by the
+separately recorded assistant assessments and rationales; human validation was not
+performed and is not claimed. Personal scoring is no longer a completion gate.
+Do not import assistant judgments as human labels or change the original measured
+evidence, rubric, literal outcomes or failed attempts. No further paid run is needed.
+
+The original design below remains as history. Its human-participation requirement
+and associated completion gate are superseded by this owner decision. The tool
+boundaries, frozen study inputs and evidence-preservation requirements are unchanged.
+
 ## Intent and size
 
 A bounded personal portfolio project: one useful synthetic delivery-exception assistant,
