@@ -4,11 +4,11 @@ A bounded synthetic portfolio demonstration: a delivery-exception assistant can 
 evidence, propose a follow-up and apply exactly one approved status change. Application
 code enforces account access and approval independently of generated tool arguments.
 
-**The guarded live attempt stopped after its first generation request failed.**
-Model/workspace access passed, but no real-model answer completed and no genuine human
-scoring has occurred. See the [dated live attempt](docs/live-results.md). The fake
-scripts deliberately include denied unauthorized attempts and one disclosed synthetic
-marker to exercise reporting. Those outcomes are not model-security findings.
+**The corrected live pass produced answers for 12/12 cases on 1 November 2026.**
+It used 35 generation requests and 23 tool dispatches; receipt-derived gross usage is
+under USD0.01. Genuine human scoring is pending, so completed answers do not establish
+task correctness or security. See the [corrected results](docs/corrected-live-results-2026-11-01.md).
+Earlier scripted fixtures and both failed live attempts remain separately preserved.
 
 The [diagnostics repair](docs/provider-failure-diagnostics.md) now retains redacted
 HTTP/error details for future failures. The first failure's missing detail cannot be
@@ -16,8 +16,8 @@ recovered, and its uncertain reservation remains stopped and preserved.
 
 The subsequent diagnostic captured an HTTP400 rejection of the unsupported `speed`
 field. The [Haiku wire correction](docs/haiku-wire-correction.md) removes that field
-and tests the actual model-specific contract. Both failed passes remain preserved;
-the corrected request has not yet completed a paid pass.
+and tests the actual model-specific contract. The corrected live pass completed without
+errors, incomplete cases or additional uncertain charges.
 
 Python 3.12, FastAPI/Pydantic, SQLite, a small direct provider interface and a CLI.
 The live adapter pins the official Anthropic SDK and Haiku 5.5. No cloud service,
@@ -129,11 +129,11 @@ granted single-pass path, fixed profile, durable USD2 allowance and unknown-char
 refuses with exit 2 before credentials, storage or network. Ordinary `run`, API and
 `study-offline` remain fake; ordinary `resume` refuses live runs.
 
-The owner approved the personal workspace, saved budget notification and US$2 packet.
-The study attempted one case: zero completed, one error and eleven unrun. The ledger
-retains US$1.051136 for an uncertain charge; actual usage/cost is unknown. Further
-dispatch is stopped. Diagnose and reconcile that attempt before considering any future
-paid work; no retry or new allowance is automatic. The model/human evidence milestone
-remains incomplete. Publication and hosted CI remain separately authorized
+The owner approved the corrected USD1.80 allocation inside the existing USD4 envelope.
+Its grant is closed after one pass. Both earlier USD1.051136 reservations remain held;
+their actual charges and provider invoice reconciliation are outstanding. The corrected
+pass has 35 supported receipts and no missing or uncertain receipt. Human review of
+all twelve completed outputs is the remaining evaluation milestone. Publication and
+hosted CI remain separately authorized
 actions. No prompt-injection immunity, statistical generalization or production adoption
 follows from twelve synthetic cases.
