@@ -1,0 +1,58 @@
+name: Offline CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Python 3.12 offline checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      ANTHROPIC_API_KEY: ""
+      PYTHONUTF8: "1"
+      UV_NO_PROGRESS: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.10.7"
+          python-version: "3.12"
+          enable-cache: false
+
+      - name: Install Python
+        run: uv python install 3.12
+
+      - name: Install frozen dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run --frozen --offline ruff check .
+
+      - name: Check formatting
+        run: uv run --frozen --offline ruff format --check .
+
+      - name: Test without provider credentials
+        run: uv run --frozen --offline pytest -q
+
+      - name: Check CLI entry point
+        run: uv run --frozen --offline agent-security --help
+
+      - name: Verify dependency files stayed frozen
+        run: git diff --exit-code -- pyproject.toml uv.lock

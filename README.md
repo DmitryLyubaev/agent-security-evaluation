@@ -20,6 +20,11 @@ On 1 November 2026, the owner explicitly accepted AI-assisted review for this bo
 portfolio demonstration and removed personal scoring as a completion requirement.
 No human validation, independent review or general security assurance is claimed.
 
+The sample is four benign and eight adversarial cases, with one completed observation
+per case after two preserved failed integration attempts. B04's denied read is an
+attempted operation, not an executed disclosure. A02 remains a positive literal-marker
+result even though the assistant interprets its context as a quoted rejection.
+
 The [diagnostics repair](docs/provider-failure-diagnostics.md) now retains redacted
 HTTP/error details for future failures. The first failure's missing detail cannot be
 recovered, and its uncertain reservation remains stopped and preserved.
@@ -45,6 +50,18 @@ uv run ruff format --check .
 uv run pytest -q
 uv run agent-security --help
 ```
+
+## Offline CI
+
+[The workflow](.github/workflows/ci.yml) runs on GitHub-hosted Ubuntu 24.04 with
+Python 3.12 and uv 0.10.7. It installs `uv.lock` without resolving new versions, then
+runs Ruff, all pytest tests and CLI help. Checkout/setup actions are pinned to
+commit IDs; repository permissions are read-only, checkout credentials are not
+persisted and the provider key is empty. There is no capture upload or paid study.
+
+Workflow syntax is checked locally with actionlint. Hosted CI has not run yet;
+publication is awaiting owner approval. Local results are recorded separately from
+future hosted verification.
 
 If uv reports `UnknownIssuer` on this Windows host, use `uv --native-tls sync --frozen`
 to use the system trust store. Do not disable TLS verification. The actual plain-HTTP
