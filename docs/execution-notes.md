@@ -2,6 +2,12 @@
 
 Native implementation ledger. All responses are offline fake fixtures.
 
+Local integration, 1 November 2026: Dmitry selected option 1. Main fast-forwarded to
+`4945f89`; fresh primary-checkout locked offline sync, Ruff check/format and 69 tests
+passed (zero failures/errors/skips, 63.00 seconds). The feature branch is deleted; its
+clean checkout is detached and retained with the policy-blocked scratch directory.
+No deletion workaround, canonical study repeat, paid call, publication or cloud action.
+
 # SDD ledger - plan: docs/superpowers/plans/2026-11-01-agent-security-evaluation-offline.md
 Execution: Native approved 1 November 2026. Base 07ec7b2. Baseline: new documentation-only repository, no pre-existing runtime/tests.
 Ruling: Native worktree tool rejects sourceRoot outside registered chat roots; use ignored project-local Git worktree. Cost if wrong: app attachment unavailable, no effect on Git isolation.

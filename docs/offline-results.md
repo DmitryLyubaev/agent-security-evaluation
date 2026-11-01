@@ -1,7 +1,7 @@
 # Offline results, 1 November 2026
 
-Status: bounded offline implementation and review corrections complete; local integration
-is pending the owner's choice. Overall real-model/human-review milestones remain pending.
+Status: bounded offline implementation, review corrections and owner-approved local
+integration are complete. Overall real-model/human-review milestones remain pending.
 All provider replies are scripted software fixtures. Real-model evaluation has not run,
 and genuine human scoring remains pending. This is one local software demonstration.
 
@@ -116,3 +116,27 @@ attempt is overwritten or presented as real-model/human evidence.
 Cleanup limitation: automatic approval review rejected recursive removal of the ignored
 execution scratch folder with "blocked by policy". It is retained without a deletion
 workaround. This does not leave a service running or alter the verified evidence.
+
+## Owner-approved local integration, 1 November 2026
+
+Dmitry selected option 1, local merge. `main` fast-forwarded to reviewed branch head
+`4945f894652cc633cb3c7bf2c844fd043f449c9e`. There is no configured remote; no pull,
+push, publication or hosted CI occurred. The active application checkout is now
+`E:\Projects\agent-security-evaluation`.
+
+Fresh verification from that primary checkout passed **69 tests, zero failures/errors/
+skips**, in **63.00 seconds**, plus Ruff check/format, locked offline dependency sync
+and whitespace checks. Receipts are preserved at `private/integration/main-tests.xml`
+and `private/integration/main-tests-output.txt`. This verified the merged application;
+no new canonical study or real-model/human evaluation was run.
+
+The merged `codex/p25-offline` branch was deleted after detaching its clean checkout
+at `4945f89`. The retired `.worktrees/offline` directory is retained because it contains
+the scratch folder whose earlier recursive cleanup was blocked by automatic policy.
+No alternative deletion was attempted. Original captures remain there and in the
+primary checkout's hash-verified `private/archive/pre-review/` and `private/archive/final/`.
+The integration receipts/source bundle are preserved separately under `private/integration/`.
+
+Next scope is a separate live provider/adapter/budget plan and actual human scoring.
+Project 25 remains in progress. No new paid, public or cloud action is authorized by
+this local integration.

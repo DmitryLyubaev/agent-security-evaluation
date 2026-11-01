@@ -35,4 +35,5 @@ separately, as described in [offline results](offline-results.md).
   and software test labels cannot satisfy those milestones.
 
 No deferred Minor findings. No source publication, paid/model call, hosted CI or cloud
-deployment was performed. Local integration remains the owner's decision.
+deployment was performed. Dmitry selected local integration on 1 November 2026; the
+merged primary checkout passed all 69 tests. See [integration results](offline-results.md).

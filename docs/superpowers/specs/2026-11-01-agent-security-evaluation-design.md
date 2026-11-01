@@ -238,8 +238,9 @@ case matrix, single-process SQLite storage and proposed runner limits above are 
 proposals for this written design. The builder may choose module layout, API route names,
 serialization details and compatible pinned dependencies without expanding scope.
 
-Next gate: review the [offline implementation plan](../plans/2026-11-01-agent-security-evaluation-offline.md)
-and select the execution method before implementation.
+The [offline implementation plan](../plans/2026-11-01-agent-security-evaluation-offline.md)
+was approved, implemented and locally integrated by owner choice on 1 November 2026.
+Next gate: a separate live provider/adapter/budget plan before real-model execution.
 Provider/model, token/cost controls, account/budget approval and final pre-run freeze are
 later live prerequisites, not reasons to prevent offline implementation. No allowance
 from another project carries over. Public application publication is not yet approved.

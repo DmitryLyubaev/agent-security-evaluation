@@ -10,7 +10,7 @@
 
 **Spec:** [Approved design](../specs/2026-11-01-agent-security-evaluation-design.md), approved by Dmitry in chat on 1 November 2026 after fresh builder check returned "nothing important left".
 
-**Plan status:** Approved by Dmitry with Native execution on 1 November 2026. All six tasks and one fresh review/correction pass completed; local integration pending owner choice.
+**Plan status:** Approved by Dmitry with Native execution on 1 November 2026. All six tasks, one fresh review/correction pass and owner-approved local integration are complete. Merged primary checkout: 69 tests passed; real-model/human milestones remain pending.
 
 ## Global Constraints
 
