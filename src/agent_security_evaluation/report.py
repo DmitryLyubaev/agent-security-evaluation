@@ -177,6 +177,11 @@ def build_report(store, study_id, output_path):
                 "model_requests": data["model_requests"],
                 "tool_dispatches": data["tool_dispatches"],
                 "error_code": data["error_code"],
+                **(
+                    {"provider_failure": data["provider_failure"]}
+                    if data.get("provider_failure")
+                    else {}
+                ),
                 "task_completion": "requires_human_assessment",
             }
         )

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import re
 import ssl
 import subprocess
 import sys
@@ -179,17 +180,87 @@ def make_client(api_key, profile, *, http_client=None, workspace_id=None):
     )
 
 
+def failure_diagnostic(exc, stage, *, secret="", response=None):
+    """Retain useful failure evidence without SDK request objects or raw headers/bodies."""
+
+    def redact(value):
+        text = str(value)
+        if isinstance(secret, str) and secret:
+            text = text.replace(secret, "[REDACTED]")
+        text = re.sub(r"sk-ant-[A-Za-z0-9_-]+", "[REDACTED]", text)
+        text = re.sub(r"(?i)\b(bearer|basic)\s+[^\s\"']+", r"\1 [REDACTED]", text)
+        return text[:1000]
+
+    response = response if response is not None else getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+    request_id = getattr(exc, "request_id", None)
+    if response is not None:
+        request_id = response.headers.get("request-id", request_id)
+    request_id = redact(request_id) if request_id else None
+    if request_id and not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", request_id):
+        request_id = None
+    body = getattr(exc, "body", None)
+    error = body.get("error", {}) if isinstance(body, dict) else {}
+    error = error if isinstance(error, dict) else {}
+    error_type = error.get("type")
+    if not isinstance(error_type, str) or error_type not in {
+        "invalid_request_error",
+        "authentication_error",
+        "billing_error",
+        "permission_error",
+        "not_found_error",
+        "request_too_large",
+        "rate_limit_error",
+        "api_error",
+        "overloaded_error",
+        "timeout_error",
+    }:
+        error_type = None
+    message = error.get("message")
+    if not isinstance(message, str):
+        # APIStatusError.__str__ includes the complete response body. Never log it.
+        message = "HTTP failure without a structured error message" if status else str(exc)
+    causes, cause = [], exc.__cause__
+    while cause is not None and len(causes) < 3:
+        causes.append({"exception_type": type(cause).__name__, "message": redact(cause)})
+        cause = cause.__cause__
+    return {
+        "stage": stage,
+        "exception_type": type(exc).__name__,
+        "http_status": status if type(status) is int and 100 <= status <= 599 else None,
+        "request_id": request_id,
+        "error_type": error_type,
+        "message": redact(message),
+        "causes": causes,
+    }
+
+
 class AnthropicProvider:
     def __init__(self, client, profile, allowance):
         self.client, self.profile, self.allowance = client, profile, allowance
         self.last_receipt = None
         self.last_error_code = None
+        self.last_diagnostic = None
+
+    def _capture_failure(self, exc, stage, response=None):
+        self.last_diagnostic = {
+            "stage": stage,
+            "exception_type": type(exc).__name__,
+            "diagnostic_error": "capture_failed",
+        }
+        try:
+            self.last_diagnostic = failure_diagnostic(
+                exc, stage, secret=getattr(self.client, "api_key", ""), response=response
+            )
+        except Exception:  # noqa: BLE001, S110 - fallback excludes raw formatter error text
+            pass
 
     async def complete(self, request):
         from .allowance import integer
 
         self.last_receipt = None
         self.last_error_code = None
+        self.last_diagnostic = None
 
         if not request.run_id or not request.case_id or request.request_ordinal is None:
             raise ValueError("trusted_request_identity_required")
@@ -216,8 +287,11 @@ class AnthropicProvider:
             counted = await self.client.messages.count_tokens(**count_body)
             if integer(counted.input_tokens) > self.profile.input_estimate_tokens:
                 raise ValueError("input_estimate_limit")
-        except Exception:
-            self.allowance.halt("token_count_failed")
+        except BaseException as exc:
+            try:
+                self._capture_failure(exc, "token_count")
+            finally:
+                self.allowance.halt("token_count_failed")
             raise
         reservation = self.allowance.reserve(
             request.case_id,
@@ -225,19 +299,31 @@ class AnthropicProvider:
             run_id=request.run_id,
             request_sha256=digest(body),
         )
+        stage, http_response = "generation", None
         try:
             response = await self.client.messages.with_raw_response.create(**body)
             http_response = response.http_response
+            stage = "receipt"
             raw = json.loads(http_response.text)
+            self.last_receipt = raw
             raw["_request_id"] = http_response.headers.get("request-id")
             raw["_workspace_id"] = http_response.headers.get("anthropic-workspace-id")
             raw["_request_body"] = json.loads(http_response.request.content)
             self.last_receipt = raw
             if raw["_workspace_id"] != self.allowance.authorization["workspace_id"]:
                 raise ProtocolError("provider_workspace_mismatch", raw)
-        except BaseException:  # financial reservation survives cancellation or unknown acceptance
+        except (
+            BaseException
+        ) as exc:  # financial reservation survives cancellation or unknown acceptance
             self.last_error_code = "provider_request_uncertain"
-            self.allowance.mark_uncertain(reservation.reservation_id, self.last_error_code)
+            try:
+                self._capture_failure(exc, stage, http_response)
+            finally:
+                self.allowance.mark_uncertain(
+                    reservation.reservation_id,
+                    self.last_error_code,
+                    diagnostic=self.last_diagnostic,
+                )
             raise
         self.allowance.settle(reservation.reservation_id, raw)
         try:

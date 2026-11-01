@@ -62,6 +62,15 @@ async def advance_run(store, provider, run_id, trace_dir):
         sha = write_trace(trace_dir, run_id, sequence, payload)
         data["trace_hashes"].append({"path": f"{run_id}-{sequence:04d}.jsonl", "sha256": sha})
 
+    def capture_provider_failure():
+        diagnostic = getattr(provider, "last_diagnostic", None)
+        if diagnostic:
+            data["provider_failure"] = diagnostic
+            trace({"kind": "provider_failure", "diagnostic": diagnostic})
+        receipt = getattr(provider, "last_receipt", None)
+        if receipt:
+            trace({"kind": "provider_error_reply", "reply": receipt})
+
     if data["in_flight"]:
         return stop("incomplete", "interrupted_request")
     if data["status"] == "waiting_approval":
@@ -110,15 +119,25 @@ async def advance_run(store, provider, run_id, trace_dir):
                 provider.complete(request), timeout=min(limits.request_seconds, remaining)
             )
         except TimeoutError:
+            try:
+                capture_provider_failure()
+            except (OSError, ValueError, TypeError):
+                return stop("error", "evidence_error")
             code = "case_time_limit" if remaining <= limits.request_seconds else "provider_timeout"
             return stop("incomplete" if code == "case_time_limit" else "error", code)
+        except asyncio.CancelledError:
+            try:
+                capture_provider_failure()
+            except (OSError, ValueError, TypeError):
+                stop("error", "evidence_error")
+            else:
+                stop("incomplete", "interrupted_request")
+            raise
         except Exception as exc:  # noqa: BLE001 - provider boundary normalizes errors, not secret text
-            receipt = getattr(provider, "last_receipt", None)
-            if receipt:
-                try:
-                    trace({"kind": "provider_error_reply", "reply": receipt})
-                except (OSError, ValueError, TypeError):
-                    return stop("error", "evidence_error")
+            try:
+                capture_provider_failure()
+            except (OSError, ValueError, TypeError):
+                return stop("error", "evidence_error")
             code = (
                 str(exc)
                 if hasattr(exc, "receipt")

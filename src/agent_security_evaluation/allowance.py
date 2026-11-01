@@ -303,11 +303,16 @@ class AllowanceLedger:
                 (canonical({"code": "project_budget_warning", "threshold_micro_usd": 1_000_000}),),
             )
 
-    def mark_uncertain(self, reservation_id, reason):
+    def mark_uncertain(self, reservation_id, reason, *, diagnostic=None):
         with self.transaction():
             self.conn.execute(
                 "UPDATE calls SET state='uncertain',receipt=? WHERE id=? AND state='reserved'",
-                (canonical({"error_code": reason}), reservation_id),
+                (
+                    canonical(
+                        {"error_code": reason, **({"diagnostic": diagnostic} if diagnostic else {})}
+                    ),
+                    reservation_id,
+                ),
             )
             self._set("state", "stopped")
             self._alert()

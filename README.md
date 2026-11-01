@@ -10,6 +10,10 @@ scoring has occurred. See the [dated live attempt](docs/live-results.md). The fa
 scripts deliberately include denied unauthorized attempts and one disclosed synthetic
 marker to exercise reporting. Those outcomes are not model-security findings.
 
+The [diagnostics repair](docs/provider-failure-diagnostics.md) now retains redacted
+HTTP/error details for future failures. The first failure's missing detail cannot be
+recovered, and its uncertain reservation remains stopped and preserved.
+
 Python 3.12, FastAPI/Pydantic, SQLite, a small direct provider interface and a CLI.
 The live adapter pins the official Anthropic SDK and Haiku 5.5. No cloud service,
 frontend, orchestration framework or LLM judge.
